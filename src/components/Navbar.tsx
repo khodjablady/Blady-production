@@ -10,8 +10,13 @@ import {
   RotateCcw, 
   AlertTriangle,
   Boxes,
-  BarChart3
+  BarChart3,
+  Database,
+  LogIn,
+  LogOut,
+  User
 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 interface NavbarProps {
   activeTab: 'synoptic' | 'erp' | 'mes' | 'analytics' | 'connectivity' | 'csharp';
@@ -30,6 +35,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onResetData,
   criticalAlertCount
 }) => {
+  const { user, profile, dbConnected, loginWithGoogle, logout } = useAuth();
   return (
     <header className="bg-slate-900 text-slate-100 border-b border-slate-800 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -140,8 +146,55 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
           </nav>
 
-          {/* Quick controls & simulation toggle */}
-          <div className="flex items-center space-x-3">
+          {/* Quick controls, database status & auth */}
+          <div className="flex items-center space-x-2.5">
+            {/* Database indicator */}
+            <div 
+              className="hidden md:flex items-center space-x-1 px-2.5 py-1 rounded-lg text-xs bg-slate-950/80 border border-slate-800 text-slate-300"
+              title="Base de données Cloud Firestore connectée"
+            >
+              <Database className="w-3.5 h-3.5 text-amber-400" />
+              <span className="text-[11px] font-mono text-slate-300">Firestore</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse ml-0.5"></span>
+            </div>
+
+            {/* Auth / User profile */}
+            {user ? (
+              <div className="flex items-center space-x-2 bg-slate-950/80 border border-slate-800 px-2.5 py-1 rounded-lg text-xs">
+                {user.photoURL ? (
+                  <img src={user.photoURL} alt={user.displayName || 'User'} className="w-5 h-5 rounded-full" />
+                ) : (
+                  <div className="w-5 h-5 rounded-full bg-sky-700 flex items-center justify-center text-[10px] text-white font-bold">
+                    {user.displayName ? user.displayName.charAt(0).toUpperCase() : 'U'}
+                  </div>
+                )}
+                <div className="hidden sm:block text-left">
+                  <div className="text-[11px] font-semibold text-white leading-tight truncate max-w-[100px]">
+                    {user.displayName || user.email?.split('@')[0]}
+                  </div>
+                  <div className="text-[9px] text-sky-400 font-mono capitalize">
+                    {profile?.role || 'Opérateur'}
+                  </div>
+                </div>
+                <button
+                  onClick={logout}
+                  className="text-slate-400 hover:text-rose-400 p-0.5 transition-colors"
+                  title="Déconnexion"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={loginWithGoogle}
+                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-sky-600 hover:bg-sky-500 text-white transition-all shadow-sm shadow-sky-900/50"
+                title="Se connecter avec Google Auth"
+              >
+                <LogIn className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Connexion</span>
+              </button>
+            )}
+
             <button
               id="btn-toggle-simulation"
               onClick={() => setIsSimulating(!isSimulating)}

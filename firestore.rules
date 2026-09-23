@@ -1,0 +1,77 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isUser(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'email', 'role'])
+        && data.keys().hasOnly(['uid', 'email', 'displayName', 'role', 'createdAt'])
+        && data.uid is string && data.uid == request.auth.uid
+        && data.email is string && data.email.size() > 0 && data.email.size() <= 254
+        && data.role in ['operator', 'supervisor', 'admin'];
+    }
+
+    function isValidOf(data) {
+      return data.keys().hasAll(['id', 'articleCode', 'quantiteDemandee', 'statut', 'createdBy'])
+        && data.keys().hasOnly(['id', 'articleCode', 'quantiteDemandee', 'quantiteProduite', 'statut', 'createdBy', 'updatedAt'])
+        && data.id is string && data.id.size() > 0 && data.id.size() <= 64
+        && data.articleCode is string && data.articleCode.size() > 0 && data.articleCode.size() <= 64
+        && data.quantiteDemandee is number && data.quantiteDemandee > 0
+        && data.statut in ['Planifie', 'EnMelange', 'EnConditionnement', 'Termine', 'Annule']
+        && data.createdBy is string && data.createdBy == request.auth.uid;
+    }
+
+    function isValidMouvement(data) {
+      return data.keys().hasAll(['id', 'date', 'articleCode', 'type', 'quantite', 'createdBy'])
+        && data.keys().hasOnly(['id', 'date', 'articleCode', 'type', 'quantite', 'referenceDocument', 'createdBy'])
+        && data.id is string && data.id.size() > 0 && data.id.size() <= 64
+        && data.articleCode is string && data.articleCode.size() > 0 && data.articleCode.size() <= 64
+        && data.type in ['ENTREE_RECEPTION', 'SORTIE_PRODUCTION', 'ENTREE_PRODUCTION', 'AJUSTEMENT_INVENTAIRE']
+        && data.quantite is number
+        && data.createdBy is string && data.createdBy == request.auth.uid;
+    }
+
+    // Health check doc
+    match /test/{docId} {
+      allow read: if true;
+      allow write: if isSignedIn();
+    }
+
+    // User profiles
+    match /users/{userId} {
+      allow get: if isUser(userId);
+      allow create: if isUser(userId) && isValidId(userId) && isValidUser(request.resource.data);
+      allow update: if isUser(userId) && isValidId(userId) && isValidUser(request.resource.data)
+        && request.resource.data.uid == resource.data.uid;
+      allow delete: if false;
+    }
+
+    // Manufacturing Orders
+    match /ordres_fabrication/{ofId} {
+      allow get, list: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(ofId) && isValidOf(request.resource.data);
+      allow update: if isSignedIn() && isValidId(ofId) && isValidOf(request.resource.data)
+        && request.resource.data.id == resource.data.id
+        && request.resource.data.createdBy == resource.data.createdBy;
+      allow delete: if isSignedIn() && resource.data.createdBy == request.auth.uid;
+    }
+
+    // Stock Movements
+    match /mouvements_stock/{mouvementId} {
+      allow get, list: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(mouvementId) && isValidMouvement(request.resource.data);
+      allow update, delete: if false;
+    }
+  }
+}

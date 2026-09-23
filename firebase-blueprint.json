@@ -1,0 +1,121 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile and permissions in the MES ERP system",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Firebase Auth UID"
+        },
+        "email": {
+          "type": "string",
+          "description": "User email address"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "User full name"
+        },
+        "role": {
+          "type": "string",
+          "enum": ["operator", "supervisor", "admin"],
+          "description": "System role for RBAC"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp"
+        }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "OrdreFabricationDoc": {
+      "title": "OrdreFabricationDoc",
+      "description": "Manufacturing production order in MES",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Order unique identifier"
+        },
+        "articleCode": {
+          "type": "string",
+          "description": "Finished product code"
+        },
+        "quantiteDemandee": {
+          "type": "number",
+          "description": "Planned quantity"
+        },
+        "quantiteProduite": {
+          "type": "number",
+          "description": "Actual produced quantity"
+        },
+        "statut": {
+          "type": "string",
+          "enum": ["Planifie", "EnMelange", "EnConditionnement", "Termine", "Annule"],
+          "description": "Workflow execution status"
+        },
+        "createdBy": {
+          "type": "string",
+          "description": "Author UID"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Last updated timestamp"
+        }
+      },
+      "required": ["id", "articleCode", "quantiteDemandee", "statut", "createdBy"]
+    },
+    "MouvementStockDoc": {
+      "title": "MouvementStockDoc",
+      "description": "Stock movement audit entry",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Movement ID"
+        },
+        "date": {
+          "type": "string",
+          "description": "Movement timestamp"
+        },
+        "articleCode": {
+          "type": "string",
+          "description": "Article SKU"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["ENTREE_RECEPTION", "SORTIE_PRODUCTION", "ENTREE_PRODUCTION", "AJUSTEMENT_INVENTAIRE"],
+          "description": "Movement type"
+        },
+        "quantite": {
+          "type": "number",
+          "description": "Delta quantity"
+        },
+        "referenceDocument": {
+          "type": "string",
+          "description": "Associated document reference"
+        },
+        "createdBy": {
+          "type": "string",
+          "description": "Operator UID"
+        }
+      },
+      "required": ["id", "date", "articleCode", "type", "quantite", "createdBy"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles and RBAC permissions"
+    },
+    "/ordres_fabrication/{ofId}": {
+      "schema": "OrdreFabricationDoc",
+      "description": "Active and historical manufacturing orders"
+    },
+    "/mouvements_stock/{mouvementId}": {
+      "schema": "MouvementStockDoc",
+      "description": "Immutable ledger of inventory transactions"
+    }
+  }
+}

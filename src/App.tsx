@@ -23,8 +23,17 @@ import {
 import { MrpStockEngine } from './services/mrpService';
 import { Article, Nomenclature, CommandeClient, SuggestionAchat, BonReception, MouvementStock, OrdreFabrication, MachineLigne, OeeMetrics } from './types';
 import { CheckCircle2, AlertTriangle, Info, X } from 'lucide-react';
+import { useAuth } from './context/AuthContext';
+import { 
+  subscribeToOrdresFabrication, 
+  persistOrdreFabrication, 
+  subscribeToMouvementsStock, 
+  persistMouvementStock 
+} from './services/firestoreService';
 
 export default function App() {
+  const { user, profile } = useAuth();
+
   // Navigation
   const [activeTab, setActiveTab] = useState<'synoptic' | 'erp' | 'mes' | 'analytics' | 'connectivity' | 'csharp'>('synoptic');
   
@@ -66,6 +75,26 @@ export default function App() {
   // Critical alerts count
   const criticalStockCount = articles.filter(a => a.estComposant && a.stockTheorique < a.seuilCritique).length;
 
+  // Real-time synchronization with Firestore (Database and Auth)
+  useEffect(() => {
+    const unsubOfs = subscribeToOrdresFabrication((cloudOfs) => {
+      if (cloudOfs && cloudOfs.length > 0) {
+        setOrdresFabrication(cloudOfs);
+      }
+    });
+
+    const unsubMvts = subscribeToMouvementsStock((cloudMvts) => {
+      if (cloudMvts && cloudMvts.length > 0) {
+        setMouvementsStock(cloudMvts);
+      }
+    });
+
+    return () => {
+      unsubOfs();
+      unsubMvts();
+    };
+  }, []);
+
   // Background industrial telemetry simulation loop
   useEffect(() => {
     if (!isSimulating) return;
@@ -97,6 +126,22 @@ export default function App() {
           };
         })
       );
+
+      // Micro-fluctuations of live OEE metrics
+      setOee(prev => {
+        const deltaD = Math.random() * 0.2 - 0.1;
+        const newD = Math.max(89.0, Math.min(95.5, Number((prev.disponibilite + deltaD).toFixed(1))));
+        const deltaP = Math.random() * 0.4 - 0.2;
+        const newP = Math.max(85.0, Math.min(93.0, Number((prev.performance + deltaP).toFixed(1))));
+        const newQ = prev.qualite;
+        const newTrs = Number(((newD / 100) * (newP / 100) * (newQ / 100) * 100).toFixed(1));
+        return {
+          ...prev,
+          disponibilite: newD,
+          performance: newP,
+          trsGlobal: newTrs
+        };
+      });
     }, 2500);
 
     return () => clearInterval(interval);
@@ -157,6 +202,7 @@ export default function App() {
       details: `Réception de ${quantiteRecue} ${art?.uniteMesure} de ${fournisseurNom}`
     };
     setMouvementsStock(prev => [...prev, newMvt]);
+    persistMouvementStock(newMvt, user?.uid);
 
     // Create BonReception
     const newBL: BonReception = {
@@ -220,23 +266,22 @@ export default function App() {
     // Update articles state
     setArticles(updatedArticles);
     setMouvementsStock(prev => [...prev, ...nouveauxMouvements]);
+    nouveauxMouvements.forEach(m => persistMouvementStock(m, user?.uid));
 
     // Update OF progression
     const totalProduit = ofTarget.quantiteProduite + quantiteRealisee;
     const estTermine = totalProduit >= ofTarget.quantiteCible;
+    const updatedOf: OrdreFabrication = {
+      ...ofTarget,
+      quantiteProduite: totalProduit,
+      quantiteRebutee: ofTarget.quantiteRebutee + quantiteRebuts,
+      statut: estTermine ? 'Termine' : ofTarget.statut
+    };
 
     setOrdresFabrication(prev =>
-      prev.map(o =>
-        o.id === ofId
-          ? {
-              ...o,
-              quantiteProduite: totalProduit,
-              quantiteRebutee: o.quantiteRebutee + quantiteRebuts,
-              statut: estTermine ? 'Termine' : o.statut
-            }
-          : o
-      )
+      prev.map(o => (o.id === ofId ? updatedOf : o))
     );
+    persistOrdreFabrication(updatedOf, user?.uid);
 
     // Also update sales order if linked
     if (ofTarget.commandeClientId) {
@@ -329,13 +374,21 @@ export default function App() {
       id: Date.now()
     };
     setOrdresFabrication(prev => [created, ...prev]);
+    persistOrdreFabrication(created, user?.uid);
     showNotification(`OF ${created.numeroOF} créé avec succès.`, 'success');
   };
 
   // 7. Change OF status
   const handleChangerStatutOf = (ofId: number, nouveauStatut: OrdreFabrication['statut']) => {
     setOrdresFabrication(prev =>
-      prev.map(o => (o.id === ofId ? { ...o, statut: nouveauStatut } : o))
+      prev.map(o => {
+        if (o.id === ofId) {
+          const updated = { ...o, statut: nouveauStatut };
+          persistOrdreFabrication(updated, user?.uid);
+          return updated;
+        }
+        return o;
+      })
     );
     showNotification(`Statut de l'OF mis à jour : ${nouveauStatut}`, 'info');
   };
@@ -402,6 +455,7 @@ export default function App() {
             machines={machines}
             activeOf={activeOf}
             oee={oee}
+            onUpdateOee={(updated) => setOee(prev => ({ ...prev, ...updated }))}
             onOpenDeclareModal={() => handleOpenDeclareModal()}
             onGoToErp={() => setActiveTab('erp')}
             onGoToMes={() => setActiveTab('mes')}

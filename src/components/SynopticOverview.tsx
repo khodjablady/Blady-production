@@ -15,6 +15,12 @@ import {
   BarChart3
 } from 'lucide-react';
 import { Article, OrdreFabrication, MachineLigne, OeeMetrics } from '../types';
+import { ProductionPerformance } from './ProductionPerformance';
+import { 
+  INDUSTRIAL_OEE_THRESHOLDS, 
+  evaluateOeeWarnings, 
+  OeeThresholds 
+} from '../utils/oeeThresholds';
 
 interface SynopticOverviewProps {
   articles: Article[];
@@ -26,6 +32,8 @@ interface SynopticOverviewProps {
   onGoToMes: () => void;
   onGoToCSharp: () => void;
   onGoToAnalytics?: () => void;
+  onUpdateOee?: (updated: Partial<OeeMetrics>) => void;
+  thresholds?: OeeThresholds;
 }
 
 export const SynopticOverview: React.FC<SynopticOverviewProps> = ({
@@ -37,8 +45,12 @@ export const SynopticOverview: React.FC<SynopticOverviewProps> = ({
   onGoToErp,
   onGoToMes,
   onGoToCSharp,
-  onGoToAnalytics
+  onGoToAnalytics,
+  onUpdateOee,
+  thresholds = INDUSTRIAL_OEE_THRESHOLDS
 }) => {
+  const currentThresholds = thresholds;
+  const oeeWarnings = evaluateOeeWarnings(oee, currentThresholds);
   const ethanol = articles.find(a => a.code === 'MP-ETH-96');
   const glycerol = articles.find(a => a.code === 'MP-GLY-99');
   const h2o2 = articles.find(a => a.code === 'MP-H2O2-30');
@@ -50,6 +62,43 @@ export const SynopticOverview: React.FC<SynopticOverviewProps> = ({
   const ofProgression = activeOf 
     ? Math.min(100, Math.round((activeOf.quantiteProduite / activeOf.quantiteCible) * 100)) 
     : 0;
+
+  // Simulation test handlers for industrial thresholds
+  const handleSimulateDispoDrop = () => {
+    const newD = 87.2;
+    const newP = oee.performance;
+    const newQ = oee.qualite;
+    const newTrs = Number(((newD / 100) * (newP / 100) * (newQ / 100) * 100).toFixed(1));
+    onUpdateOee?.({ disponibilite: newD, trsGlobal: newTrs });
+  };
+
+  const handleSimulatePerfDrop = () => {
+    const newD = oee.disponibilite;
+    const newP = 81.4;
+    const newQ = oee.qualite;
+    const newTrs = Number(((newD / 100) * (newP / 100) * (newQ / 100) * 100).toFixed(1));
+    onUpdateOee?.({ performance: newP, trsGlobal: newTrs });
+  };
+
+  const handleSimulateQualiteDrop = () => {
+    const newD = oee.disponibilite;
+    const newP = oee.performance;
+    const newQ = 96.2;
+    const newTrs = Number(((newD / 100) * (newP / 100) * (newQ / 100) * 100).toFixed(1));
+    onUpdateOee?.({ qualite: newQ, trsGlobal: newTrs });
+  };
+
+  const handleSimulateCriticalDrop = () => {
+    const newD = 85.5;
+    const newP = 82.0;
+    const newQ = 96.0;
+    const newTrs = Number(((newD / 100) * (newP / 100) * (newQ / 100) * 100).toFixed(1));
+    onUpdateOee?.({ disponibilite: newD, performance: newP, qualite: newQ, trsGlobal: newTrs });
+  };
+
+  const handleResetNominal = () => {
+    onUpdateOee?.({ disponibilite: 92.4, performance: 88.6, qualite: 98.9, trsGlobal: 81.0 });
+  };
 
   return (
     <div className="space-y-6">
@@ -105,35 +154,218 @@ export const SynopticOverview: React.FC<SynopticOverviewProps> = ({
         </div>
       </div>
 
+      {/* Industrial Warning System Banner (Displayed when any threshold is breached) */}
+      {oeeWarnings.hasAnyWarning && (
+        <div className="bg-gradient-to-r from-rose-950/90 via-slate-900 to-slate-900 border-2 border-rose-500/80 rounded-2xl p-4 shadow-xl shadow-rose-950/40 animate-in fade-in slide-in-from-top-3 duration-300">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <div className="flex items-start space-x-3">
+              <div className="p-2 rounded-xl bg-rose-900/60 border border-rose-600 text-rose-400 shrink-0 mt-0.5">
+                <AlertTriangle className="w-5 h-5 animate-pulse" />
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="text-sm font-bold text-rose-200 tracking-tight flex items-center gap-2">
+                    <span>SYSTÈME D'ALERTE INDUSTRIEL (NF E60-182 / ISO 22400)</span>
+                    <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-rose-900/90 border border-rose-600 text-rose-300">
+                      Sous Seuil Critique
+                    </span>
+                  </h3>
+                </div>
+                <p className="text-xs text-rose-300/80">
+                  Une ou plusieurs métriques OEE ont chuté sous les normes industrielles d'exploitation :
+                </p>
+                <div className="flex flex-wrap items-center gap-2 pt-1">
+                  {oeeWarnings.disponibilite.isWarning && (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-rose-950/90 text-rose-400 border border-rose-700/80 shadow-sm">
+                      <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
+                      Disponibilité : {oee.disponibilite}% (Norme ≥ {currentThresholds.disponibilite}%)
+                    </span>
+                  )}
+                  {oeeWarnings.performance.isWarning && (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-rose-950/90 text-rose-400 border border-rose-700/80 shadow-sm">
+                      <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
+                      Performance : {oee.performance}% (Norme ≥ {currentThresholds.performance}%)
+                    </span>
+                  )}
+                  {oeeWarnings.qualite.isWarning && (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-rose-950/90 text-rose-400 border border-rose-700/80 shadow-sm">
+                      <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
+                      Qualité : {oee.qualite}% (Norme ≥ {currentThresholds.qualite}%)
+                    </span>
+                  )}
+                  {oeeWarnings.trsGlobal.isWarning && (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-rose-950/90 text-rose-400 border border-rose-700/80 shadow-sm">
+                      <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
+                      TRS Global : {oee.trsGlobal}% (Objectif ≥ {currentThresholds.trsGlobal}%)
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 self-end md:self-center shrink-0">
+              <button
+                onClick={onGoToMes}
+                className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-rose-900/80 hover:bg-rose-800 text-white border border-rose-600 transition-colors shadow-sm"
+              >
+                Inspecter MES
+              </button>
+              <button
+                onClick={handleResetNominal}
+                className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors"
+              >
+                Rétablir Nominal
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Threshold Testing & Simulation Bar */}
+      <div className="bg-slate-950/80 border border-slate-800 rounded-xl px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 text-xs">
+        <div className="flex items-center space-x-2 text-slate-300">
+          <Sliders className="w-4 h-4 text-sky-400" />
+          <span className="font-semibold text-slate-200">Simulation Alertes Seuils OEE :</span>
+          <span className="text-slate-400 hidden lg:inline">
+            (Normes : Dispo ≥ {currentThresholds.disponibilite}% | Perf ≥ {currentThresholds.performance}% | Qualité ≥ {currentThresholds.qualite}% | TRS ≥ {currentThresholds.trsGlobal}%)
+          </span>
+        </div>
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <button
+            onClick={handleResetNominal}
+            className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-950/70 hover:bg-emerald-900/80 text-emerald-300 border border-emerald-700/60 transition-colors"
+          >
+            Régime Nominal
+          </button>
+          <button
+            onClick={handleSimulateDispoDrop}
+            className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
+              oeeWarnings.disponibilite.isWarning
+                ? 'bg-rose-900 text-white border border-rose-500 font-bold'
+                : 'bg-slate-800 hover:bg-rose-950 text-slate-300 hover:text-rose-300 border border-slate-700'
+            }`}
+          >
+            Alerte Dispo (&lt;90%)
+          </button>
+          <button
+            onClick={handleSimulatePerfDrop}
+            className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
+              oeeWarnings.performance.isWarning
+                ? 'bg-rose-900 text-white border border-rose-500 font-bold'
+                : 'bg-slate-800 hover:bg-rose-950 text-slate-300 hover:text-rose-300 border border-slate-700'
+            }`}
+          >
+            Alerte Perf (&lt;85%)
+          </button>
+          <button
+            onClick={handleSimulateQualiteDrop}
+            className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
+              oeeWarnings.qualite.isWarning
+                ? 'bg-rose-900 text-white border border-rose-500 font-bold'
+                : 'bg-slate-800 hover:bg-rose-950 text-slate-300 hover:text-rose-300 border border-slate-700'
+            }`}
+          >
+            Alerte Qualité (&lt;98%)
+          </button>
+          <button
+            onClick={handleSimulateCriticalDrop}
+            className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
+              oeeWarnings.hasAnyWarning && oeeWarnings.trsGlobal.isWarning
+                ? 'bg-rose-900 text-white border border-rose-500 animate-pulse font-bold'
+                : 'bg-rose-950/60 hover:bg-rose-900 text-rose-300 border border-rose-800/80'
+            }`}
+          >
+            Alerte Multi-Critères
+          </button>
+        </div>
+      </div>
+
       {/* KPI Bar: TRS / OEE & Active Order */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         
-        {/* TRS Global */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col justify-between">
-          <div className="flex items-center justify-between text-slate-400 text-xs">
-            <span className="font-medium">Taux de Rendement Synthétique</span>
-            <Gauge className="w-4 h-4 text-sky-400" />
+        {/* TRS Global Card */}
+        <div className={`rounded-xl p-4 flex flex-col justify-between transition-all ${
+          oeeWarnings.trsGlobal.isWarning
+            ? 'bg-rose-950/25 border-2 border-rose-500/80 ring-1 ring-rose-500/40 shadow-lg shadow-rose-950/40'
+            : 'bg-slate-900 border border-slate-800'
+        }`}>
+          <div className="flex items-center justify-between text-xs">
+            <span className={`font-semibold flex items-center gap-1.5 ${
+              oeeWarnings.trsGlobal.isWarning ? 'text-rose-300' : 'text-slate-400'
+            }`}>
+              {oeeWarnings.trsGlobal.isWarning && <AlertTriangle className="w-3.5 h-3.5 text-rose-400 animate-pulse" />}
+              <span>Taux de Rendement Synthétique</span>
+            </span>
+            <Gauge className={`w-4 h-4 ${oeeWarnings.trsGlobal.isWarning ? 'text-rose-400' : 'text-sky-400'}`} />
           </div>
           <div className="mt-3 flex items-baseline justify-between">
-            <span className="text-3xl font-bold font-mono text-white tracking-tight">
+            <span className={`text-3xl font-bold font-mono tracking-tight ${
+              oeeWarnings.trsGlobal.isWarning ? 'text-rose-500 font-extrabold animate-pulse' : 'text-white'
+            }`}>
               {oee.trsGlobal}%
             </span>
-            <span className="text-xs px-2 py-0.5 rounded font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-              Objectif ≥ 80%
+            <span className={`text-xs px-2 py-0.5 rounded font-semibold ${
+              oeeWarnings.trsGlobal.isWarning
+                ? 'bg-rose-500/20 text-rose-300 border border-rose-500/50 animate-pulse'
+                : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
+            }`}>
+              {oeeWarnings.trsGlobal.isWarning ? `< ${currentThresholds.trsGlobal}% Alerte Seuil` : `Objectif ≥ ${currentThresholds.trsGlobal}%`}
             </span>
           </div>
           <div className="mt-3 grid grid-cols-3 text-center border-t border-slate-800/80 pt-2 text-[11px]">
             <div>
-              <div className="text-slate-400">Dispo</div>
-              <div className="font-semibold text-slate-200 font-mono">{oee.disponibilite}%</div>
+              <div className={`flex items-center justify-center gap-0.5 ${
+                oeeWarnings.disponibilite.isWarning ? 'text-rose-400 font-bold' : 'text-slate-400'
+              }`}>
+                {oeeWarnings.disponibilite.isWarning && <AlertTriangle className="w-2.5 h-2.5 text-rose-400 shrink-0" />}
+                <span>Dispo</span>
+              </div>
+              <div className={`font-semibold font-mono ${
+                oeeWarnings.disponibilite.isWarning ? 'text-rose-500 font-bold animate-pulse' : 'text-slate-200'
+              }`}>
+                {oee.disponibilite}%
+              </div>
+              <div className={`text-[9px] font-mono ${
+                oeeWarnings.disponibilite.isWarning ? 'text-rose-400 font-bold' : 'text-slate-500'
+              }`}>
+                {oeeWarnings.disponibilite.isWarning ? `<${currentThresholds.disponibilite}%` : `≥${currentThresholds.disponibilite}%`}
+              </div>
             </div>
             <div>
-              <div className="text-slate-400">Perf</div>
-              <div className="font-semibold text-slate-200 font-mono">{oee.performance}%</div>
+              <div className={`flex items-center justify-center gap-0.5 ${
+                oeeWarnings.performance.isWarning ? 'text-rose-400 font-bold' : 'text-slate-400'
+              }`}>
+                {oeeWarnings.performance.isWarning && <AlertTriangle className="w-2.5 h-2.5 text-rose-400 shrink-0" />}
+                <span>Perf</span>
+              </div>
+              <div className={`font-semibold font-mono ${
+                oeeWarnings.performance.isWarning ? 'text-rose-500 font-bold animate-pulse' : 'text-slate-200'
+              }`}>
+                {oee.performance}%
+              </div>
+              <div className={`text-[9px] font-mono ${
+                oeeWarnings.performance.isWarning ? 'text-rose-400 font-bold' : 'text-slate-500'
+              }`}>
+                {oeeWarnings.performance.isWarning ? `<${currentThresholds.performance}%` : `≥${currentThresholds.performance}%`}
+              </div>
             </div>
             <div>
-              <div className="text-slate-400">Qualité</div>
-              <div className="font-semibold text-emerald-400 font-mono">{oee.qualite}%</div>
+              <div className={`flex items-center justify-center gap-0.5 ${
+                oeeWarnings.qualite.isWarning ? 'text-rose-400 font-bold' : 'text-slate-400'
+              }`}>
+                {oeeWarnings.qualite.isWarning && <AlertTriangle className="w-2.5 h-2.5 text-rose-400 shrink-0" />}
+                <span>Qualité</span>
+              </div>
+              <div className={`font-semibold font-mono ${
+                oeeWarnings.qualite.isWarning ? 'text-rose-500 font-bold animate-pulse' : 'text-emerald-400'
+              }`}>
+                {oee.qualite}%
+              </div>
+              <div className={`text-[9px] font-mono ${
+                oeeWarnings.qualite.isWarning ? 'text-rose-400 font-bold' : 'text-slate-500'
+              }`}>
+                {oeeWarnings.qualite.isWarning ? `<${currentThresholds.qualite}%` : `≥${currentThresholds.qualite}%`}
+              </div>
             </div>
           </div>
           {onGoToAnalytics && (
@@ -216,6 +448,14 @@ export const SynopticOverview: React.FC<SynopticOverviewProps> = ({
         </div>
 
       </div>
+
+      {/* Production Performance D3 Live Trends Component */}
+      <ProductionPerformance 
+        oee={oee}
+        machines={machines}
+        activeOf={activeOf}
+        thresholds={currentThresholds}
+      />
 
       {/* Industrial Process Flow Synoptic */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-sm">
