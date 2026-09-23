@@ -1,0 +1,549 @@
+import React from 'react';
+import { 
+  Activity, 
+  Droplets, 
+  Gauge, 
+  CheckCircle2, 
+  AlertTriangle, 
+  ArrowRight, 
+  Play, 
+  Sliders, 
+  Layers, 
+  TrendingUp,
+  FileCode2,
+  PackageCheck,
+  BarChart3
+} from 'lucide-react';
+import { Article, OrdreFabrication, MachineLigne, OeeMetrics } from '../types';
+
+interface SynopticOverviewProps {
+  articles: Article[];
+  machines: MachineLigne[];
+  activeOf?: OrdreFabrication;
+  oee: OeeMetrics;
+  onOpenDeclareModal: () => void;
+  onGoToErp: () => void;
+  onGoToMes: () => void;
+  onGoToCSharp: () => void;
+  onGoToAnalytics?: () => void;
+}
+
+export const SynopticOverview: React.FC<SynopticOverviewProps> = ({
+  articles,
+  machines,
+  activeOf,
+  oee,
+  onOpenDeclareModal,
+  onGoToErp,
+  onGoToMes,
+  onGoToCSharp,
+  onGoToAnalytics
+}) => {
+  const ethanol = articles.find(a => a.code === 'MP-ETH-96');
+  const glycerol = articles.find(a => a.code === 'MP-GLY-99');
+  const h2o2 = articles.find(a => a.code === 'MP-H2O2-30');
+  const eau = articles.find(a => a.code === 'MP-EAU-OSM');
+
+  const cuveMelange = machines.find(m => m.type === 'CuveMelange') || machines[0];
+  const remplisseuse = machines.find(m => m.type === 'Remplisseuse') || machines[2];
+
+  const ofProgression = activeOf 
+    ? Math.min(100, Math.round((activeOf.quantiteProduite / activeOf.quantiteCible) * 100)) 
+    : 0;
+
+  return (
+    <div className="space-y-6">
+      
+      {/* Top Banner: Status & Context */}
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-sm">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center space-x-3">
+              <span className="flex h-3 w-3 relative">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+              </span>
+              <h2 className="text-xl font-bold text-white tracking-tight">
+                Supervision Usine Process Liquides & Conditionnement
+              </h2>
+              <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-sky-950 text-sky-400 border border-sky-800/60">
+                Atelier 01 - Ligne Haute Cadence
+              </span>
+            </div>
+            <p className="text-sm text-slate-400">
+              Pilotage unifié ERP & MES sous architecture Monolithe Modulaire C# .NET 8/9.
+            </p>
+          </div>
+
+          {/* Quick Actions */}
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              id="btn-quick-declare"
+              onClick={onOpenDeclareModal}
+              className="flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-950/40 transition-colors"
+            >
+              <PackageCheck className="w-4 h-4" />
+              <span>Déclaration de Production</span>
+            </button>
+            <button
+              id="btn-quick-mrp"
+              onClick={onGoToErp}
+              className="flex items-center space-x-2 px-3 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-colors"
+            >
+              <TrendingUp className="w-4 h-4 text-sky-400" />
+              <span>Calcul MRP (ERP)</span>
+            </button>
+            <button
+              id="btn-quick-csharp"
+              onClick={onGoToCSharp}
+              className="flex items-center space-x-2 px-3 py-2 rounded-xl text-xs font-semibold bg-indigo-950/70 hover:bg-indigo-900/80 text-indigo-300 border border-indigo-700/50 transition-colors"
+            >
+              <FileCode2 className="w-4 h-4 text-indigo-400" />
+              <span>Code C# (.NET)</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* KPI Bar: TRS / OEE & Active Order */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        
+        {/* TRS Global */}
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-slate-400 text-xs">
+            <span className="font-medium">Taux de Rendement Synthétique</span>
+            <Gauge className="w-4 h-4 text-sky-400" />
+          </div>
+          <div className="mt-3 flex items-baseline justify-between">
+            <span className="text-3xl font-bold font-mono text-white tracking-tight">
+              {oee.trsGlobal}%
+            </span>
+            <span className="text-xs px-2 py-0.5 rounded font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+              Objectif ≥ 80%
+            </span>
+          </div>
+          <div className="mt-3 grid grid-cols-3 text-center border-t border-slate-800/80 pt-2 text-[11px]">
+            <div>
+              <div className="text-slate-400">Dispo</div>
+              <div className="font-semibold text-slate-200 font-mono">{oee.disponibilite}%</div>
+            </div>
+            <div>
+              <div className="text-slate-400">Perf</div>
+              <div className="font-semibold text-slate-200 font-mono">{oee.performance}%</div>
+            </div>
+            <div>
+              <div className="text-slate-400">Qualité</div>
+              <div className="font-semibold text-emerald-400 font-mono">{oee.qualite}%</div>
+            </div>
+          </div>
+          {onGoToAnalytics && (
+            <button
+              onClick={onGoToAnalytics}
+              className="mt-2 text-[11px] text-sky-400 hover:text-sky-300 flex items-center justify-between w-full pt-1.5 border-t border-slate-800/60 font-medium transition-colors"
+            >
+              <span>Historique OEE & Stocks 30j</span>
+              <ArrowRight className="w-3 h-3" />
+            </button>
+          )}
+        </div>
+
+        {/* Ordre de Fabrication Actif */}
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-slate-400 text-xs">
+            <span className="font-medium">OF en Cours (MES)</span>
+            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+              {activeOf?.statut || 'En cours'}
+            </span>
+          </div>
+          <div className="mt-2">
+            <div className="text-sm font-bold text-white flex items-center justify-between">
+              <span>{activeOf?.numeroOF || 'OF-2026-104'}</span>
+              <span className="font-mono text-xs text-sky-400">Lot: {activeOf?.numeroLotFabrique}</span>
+            </div>
+            <p className="text-xs text-slate-400 truncate mt-0.5">
+              Solution Désinfectante 1000ml
+            </p>
+          </div>
+          <div className="mt-3">
+            <div className="flex justify-between text-xs text-slate-300 mb-1 font-mono">
+              <span>{activeOf?.quantiteProduite} / {activeOf?.quantiteCible} U</span>
+              <span className="font-semibold text-sky-400">{ofProgression}%</span>
+            </div>
+            <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-sky-500 transition-all duration-500 rounded-full"
+                style={{ width: `${ofProgression}%` }}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Cadence Ligne Instantanée */}
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-slate-400 text-xs">
+            <span className="font-medium">Cadence Remplisseuse</span>
+            <Activity className="w-4 h-4 text-emerald-400 animate-pulse" />
+          </div>
+          <div className="mt-3 flex items-baseline justify-between">
+            <span className="text-3xl font-bold font-mono text-white tracking-tight">
+              {remplisseuse.cadenceActuelle}
+            </span>
+            <span className="text-xs text-slate-400">flacons / h</span>
+          </div>
+          <div className="mt-3 text-xs text-slate-400 flex items-center justify-between border-t border-slate-800/80 pt-2">
+            <span>Nominale: 1000 / h</span>
+            <span className="text-emerald-400 font-mono">92% charge</span>
+          </div>
+        </div>
+
+        {/* Cuve de Mélange & Réacteur */}
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-slate-400 text-xs">
+            <span className="font-medium">Réacteur R-5000L</span>
+            <Droplets className="w-4 h-4 text-cyan-400" />
+          </div>
+          <div className="mt-3 flex items-baseline justify-between">
+            <span className="text-3xl font-bold font-mono text-white tracking-tight">
+              {cuveMelange.niveauCuveLitres || 3450}
+            </span>
+            <span className="text-xs text-slate-400">Litres en cuve</span>
+          </div>
+          <div className="mt-3 text-xs text-slate-400 flex items-center justify-between border-t border-slate-800/80 pt-2">
+            <span>T°: <strong className="text-slate-200">{cuveMelange.temperatureC}°C</strong></span>
+            <span>P: <strong className="text-slate-200">{cuveMelange.pressionBar} bar</strong></span>
+            <span className="text-emerald-400">Agitateur ON</span>
+          </div>
+        </div>
+
+      </div>
+
+      {/* Industrial Process Flow Synoptic */}
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-sm">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h3 className="text-base font-bold text-white flex items-center space-x-2">
+              <span>Synoptique Fonctionnel de la Ligne de Process</span>
+              <span className="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-normal">
+                ISA-88 / S88 Batch Control
+              </span>
+            </h3>
+            <p className="text-xs text-slate-400 mt-1">
+              Flux continu : Approvisionnement MP → Dosage & Formulation → Homogénéisation → Remplissage → Étiquetage
+            </p>
+          </div>
+          <button 
+            onClick={onGoToMes}
+            className="text-xs text-sky-400 hover:text-sky-300 flex items-center space-x-1 font-medium"
+          >
+            <span>Détails Poste Opérateur</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+
+        {/* Process Diagram Pipeline */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 relative">
+          
+          {/* Step 1: Raw Material Tanks (MP) */}
+          <div className="bg-slate-950/70 border border-slate-800 rounded-xl p-4 flex flex-col justify-between relative group hover:border-slate-700 transition-colors">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800/60">
+              <span className="text-xs font-bold text-sky-400 flex items-center space-x-1">
+                <span className="w-2 h-2 rounded-full bg-sky-500"></span>
+                <span>1. Stockage MP</span>
+              </span>
+              <span className="text-[10px] text-slate-400">Cuves & IBC</span>
+            </div>
+
+            {/* Micro Tank gauges */}
+            <div className="space-y-2.5 my-3">
+              {/* Éthanol */}
+              <div>
+                <div className="flex justify-between text-[11px] mb-1">
+                  <span className="text-slate-300 font-medium truncate">Éthanol 96%</span>
+                  <span className="font-mono text-slate-400">{ethanol?.stockTheorique} L</span>
+                </div>
+                <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+                  <div 
+                    className={`h-full rounded-full transition-all ${
+                      (ethanol?.stockTheorique || 0) < (ethanol?.seuilCritique || 1) 
+                        ? 'bg-amber-500 animate-pulse' 
+                        : 'bg-sky-500'
+                    }`}
+                    style={{ width: `${Math.min(100, Math.round(((ethanol?.stockTheorique || 0) / 4000) * 100))}%` }}
+                  />
+                </div>
+                {(ethanol?.stockTheorique || 0) < (ethanol?.seuilCritique || 0) && (
+                  <span className="text-[10px] text-amber-400 flex items-center gap-1 mt-0.5">
+                    <AlertTriangle className="w-3 h-3 inline" /> Seuil critique atteint!
+                  </span>
+                )}
+              </div>
+
+              {/* H2O2 */}
+              <div>
+                <div className="flex justify-between text-[11px] mb-1">
+                  <span className="text-slate-300 font-medium truncate">Peroxyde H2O2</span>
+                  <span className="font-mono text-slate-400">{h2o2?.stockTheorique} L</span>
+                </div>
+                <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-cyan-500 rounded-full"
+                    style={{ width: `${Math.min(100, Math.round(((h2o2?.stockTheorique || 0) / 1000) * 100))}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Glycérol */}
+              <div>
+                <div className="flex justify-between text-[11px] mb-1">
+                  <span className="text-slate-300 font-medium truncate">Glycérol 99%</span>
+                  <span className="font-mono text-slate-400">{glycerol?.stockTheorique} L</span>
+                </div>
+                <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+                  <div 
+                    className={`h-full rounded-full ${
+                      (glycerol?.stockTheorique || 0) < (glycerol?.seuilCritique || 1) ? 'bg-amber-500' : 'bg-emerald-500'
+                    }`}
+                    style={{ width: `${Math.min(100, Math.round(((glycerol?.stockTheorique || 0) / 600) * 100))}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Eau Osmosée */}
+              <div>
+                <div className="flex justify-between text-[11px] mb-1">
+                  <span className="text-slate-300 font-medium truncate">Eau Osmosée</span>
+                  <span className="font-mono text-slate-400">{eau?.stockTheorique} L</span>
+                </div>
+                <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-blue-500 rounded-full"
+                    style={{ width: '65%' }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="text-[11px] text-slate-400 pt-2 border-t border-slate-800/60 flex justify-between">
+              <span>Vannes proportionnelles</span>
+              <span className="text-emerald-400">Asservies</span>
+            </div>
+          </div>
+
+          {/* Step 2: Mixing Reactor Tank */}
+          <div className="bg-slate-950/70 border border-slate-800 rounded-xl p-4 flex flex-col justify-between relative group hover:border-slate-700 transition-colors">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800/60">
+              <span className="text-xs font-bold text-cyan-400 flex items-center space-x-1">
+                <span className="w-2 h-2 rounded-full bg-cyan-500"></span>
+                <span>2. Cuve de Mélange</span>
+              </span>
+              <span className="text-[10px] text-slate-400">R-5000L</span>
+            </div>
+
+            <div className="my-4 flex flex-col items-center justify-center">
+              {/* Animated Tank Graphic */}
+              <div className="w-24 h-32 border-2 border-slate-600 rounded-b-2xl rounded-t-md relative overflow-hidden bg-slate-900 flex flex-col justify-end shadow-inner">
+                {/* Liquid fill */}
+                <div 
+                  className="w-full bg-gradient-to-t from-cyan-600 to-sky-400 transition-all duration-700 relative"
+                  style={{ height: '69%' }}
+                >
+                  {/* Wave effect */}
+                  <div className="absolute top-0 left-0 right-0 h-1 bg-cyan-200/50 animate-pulse"></div>
+                  {/* Bubbles / agitation */}
+                  <div className="absolute inset-0 flex items-center justify-center opacity-40">
+                    <span className="animate-spin text-xs">∿</span>
+                  </div>
+                </div>
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                  <span className="text-xs font-mono font-bold text-white drop-shadow">
+                    3 450 L
+                  </span>
+                  <span className="text-[10px] text-cyan-200 drop-shadow">
+                    69% plein
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-1 text-[11px] text-slate-300 border-t border-slate-800/60 pt-2">
+              <div className="flex justify-between">
+                <span className="text-slate-400">Agitateur :</span>
+                <span className="text-emerald-400 font-mono">180 tr/min</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400">Tolérance perte cuve :</span>
+                <span className="text-sky-400 font-mono">+3.5% purge</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Step 3: Filling and Capping Machine */}
+          <div className="bg-slate-950/70 border border-slate-800 rounded-xl p-4 flex flex-col justify-between relative group hover:border-slate-700 transition-colors">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800/60">
+              <span className="text-xs font-bold text-emerald-400 flex items-center space-x-1">
+                <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                <span>3. Remplissage 12 Becs</span>
+              </span>
+              <span className="text-[10px] text-slate-400">Rotative</span>
+            </div>
+
+            <div className="my-3 space-y-3">
+              <div className="bg-slate-900 p-2.5 rounded-lg border border-slate-800">
+                <div className="text-[11px] text-slate-400 mb-1">Cadence courante</div>
+                <div className="text-xl font-bold font-mono text-emerald-400 flex items-baseline gap-1">
+                  <span>920</span>
+                  <span className="text-xs text-slate-400 font-normal">flacons / h</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 text-center text-[11px]">
+                <div className="bg-slate-900/80 p-2 rounded border border-slate-800">
+                  <div className="text-slate-400">Flacons 1L</div>
+                  <div className="font-mono text-slate-200 font-semibold">1 100 U</div>
+                </div>
+                <div className="bg-slate-900/80 p-2 rounded border border-slate-800">
+                  <div className="text-slate-400">Bouchons Spray</div>
+                  <div className="font-mono text-slate-200 font-semibold">3 200 U</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-1 text-[11px] text-slate-300 border-t border-slate-800/60 pt-2">
+              <div className="flex justify-between">
+                <span className="text-slate-400">Vissage couple :</span>
+                <span className="text-emerald-400 font-mono">2.8 N.m (OK)</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400">Perte démarrage :</span>
+                <span className="text-slate-400 font-mono">1.2% calage</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Step 4: Quality & Packaging */}
+          <div className="bg-slate-950/70 border border-slate-800 rounded-xl p-4 flex flex-col justify-between relative group hover:border-slate-700 transition-colors">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800/60">
+              <span className="text-xs font-bold text-amber-400 flex items-center space-x-1">
+                <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+                <span>4. Étiquetage & Qualité</span>
+              </span>
+              <span className="text-[10px] text-slate-400">Contrôle Vision</span>
+            </div>
+
+            <div className="my-3 space-y-2.5">
+              <div className="bg-slate-900 p-2.5 rounded-lg border border-slate-800 text-[11px]">
+                <div className="flex justify-between text-slate-300 mb-1">
+                  <span>Conformité Vision</span>
+                  <span className="font-bold text-emerald-400">98.9%</span>
+                </div>
+                <div className="flex justify-between text-slate-400">
+                  <span>Rebuts rejetés :</span>
+                  <span className="text-rose-400 font-mono">4 flacons</span>
+                </div>
+              </div>
+
+              <div className="bg-slate-900 p-2.5 rounded-lg border border-slate-800 text-[11px] space-y-1">
+                <div className="text-slate-400 font-medium">N° Lot Fini Imprimé :</div>
+                <div className="font-mono text-xs text-sky-300 font-semibold bg-slate-950 p-1 rounded border border-slate-800 text-center">
+                  {activeOf?.numeroLotFabrique || 'LOT-VIR-2609-A1'}
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-2 border-t border-slate-800/60">
+              <button
+                onClick={onOpenDeclareModal}
+                className="w-full py-1.5 px-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-xs font-semibold transition-colors flex items-center justify-center space-x-1"
+              >
+                <span>Déclarer Fin de Lot</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      {/* Bottom Row: Backflushing Explanation & System Integration Note */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 text-xs space-y-2">
+          <div className="font-bold text-white flex items-center space-x-2">
+            <Droplets className="w-4 h-4 text-cyan-400" />
+            <span>Spécificité Fluides & Pertes Process</span>
+          </div>
+          <p className="text-slate-400 leading-relaxed">
+            Dans le code C# du domaine (<code className="text-sky-300 font-mono">Nomenclature.cs</code>), 
+            chaque composant liquide intègre un <strong className="text-slate-200">PourcentagePerteTolerable</strong>.
+            Le service <code className="text-sky-300 font-mono">MrpStockService</code> applique automatiquement le facteur :
+          </p>
+          <pre className="bg-slate-950 p-2 rounded border border-slate-800 text-[11px] font-mono text-emerald-400 overflow-x-auto">
+{`decimal facteur = 1 + (lien.PourcentagePerteTolerable / 100m);
+quantiteConsommee = besoinUnitaire * quantiteRealisee * facteur;`}
+          </pre>
+        </div>
+
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 text-xs space-y-2">
+          <div className="font-bold text-white flex items-center space-x-2">
+            <Activity className="w-4 h-4 text-sky-400" />
+            <span>Boucle de Réapprovisionnement MRP</span>
+          </div>
+          <p className="text-slate-400 leading-relaxed">
+            Lorsque la post-déduction fait chuter le <strong className="text-slate-200">StockTheorique</strong> sous le 
+            <strong className="text-slate-200"> SeuilCritique</strong>, l'ERP génère automatiquement une <code className="text-amber-300 font-mono">SuggestionAchat</code> arrondie aux multiples du conditionnement standard (<code className="text-slate-200 font-mono">QuantiteStandardAchat</code>).
+          </p>
+          <div className="pt-1">
+            <button 
+              onClick={onGoToErp}
+              className="text-sky-400 hover:text-sky-300 font-semibold flex items-center gap-1"
+            >
+              <span>Accéder au module Achats & MRP</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 text-xs space-y-2">
+          <div className="font-bold text-white flex items-center space-x-2">
+            <BarChart3 className="w-4 h-4 text-emerald-400" />
+            <span>Visualisation Recharts 30 Jours</span>
+          </div>
+          <p className="text-slate-400 leading-relaxed">
+            Module de business intelligence industriel : trajectoire temporelle des niveaux de stock ERP (avec seuils d'alerte), décomposition D/P/Q du TRS MES et analyse Pareto des arrêts de ligne.
+          </p>
+          <div className="pt-1">
+            {onGoToAnalytics && (
+              <button 
+                onClick={onGoToAnalytics}
+                className="text-emerald-400 hover:text-emerald-300 font-semibold flex items-center gap-1"
+              >
+                <span>Ouvrir le module Analytique</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 text-xs space-y-2">
+          <div className="font-bold text-white flex items-center space-x-2">
+            <FileCode2 className="w-4 h-4 text-indigo-400" />
+            <span>Monolithe Modulaire C# (.NET 8/9)</span>
+          </div>
+          <p className="text-slate-400 leading-relaxed">
+            Une seule solution .NET regroupant les projets <code className="text-slate-200">BladyProduction.Erp</code>, <code className="text-slate-200">BladyProduction.Mes</code> et <code className="text-slate-200">BladyProduction.Connectivity</code>. Déploiement unique en local sans microservices complexes.
+          </p>
+          <div className="pt-1">
+            <button 
+              onClick={onGoToCSharp}
+              className="text-indigo-400 hover:text-indigo-300 font-semibold flex items-center gap-1"
+            >
+              <span>Consulter la solution .NET</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  );
+};

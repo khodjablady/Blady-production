@@ -1,0 +1,8 @@
+{
+  "name": "Blady-production-ERP-MES",
+  "description": "Logiciel industriel complet (ERP + MES + Connectivité IoT) en architecture Monolithe Modulaire C# (.NET 8/9) pour industrie de transformation et liquides.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
