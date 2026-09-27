@@ -60,6 +60,25 @@ export class MrpStockEngine {
       });
     }
 
+    // Incrémenter le stock de produit fini produit (Entrée de production)
+    const parentIndex = updatedArticles.findIndex(a => a.id === articleFabriqueId);
+    if (parentIndex !== -1) {
+      const parent = { ...updatedArticles[parentIndex] };
+      parent.stockTheorique = Number((parent.stockTheorique + quantiteRealisee).toFixed(4));
+      updatedArticles[parentIndex] = parent;
+
+      nouveauxMouvements.push({
+        id: Date.now() + Math.floor(Math.random() * 1000) + 1,
+        articleId: parent.id,
+        quantite: quantiteRealisee,
+        typeMouvement: 'Entree',
+        referenceDocument: `OF-PROD (Lot: ${numeroLot})`,
+        numeroLot: numeroLot,
+        dateMouvement: new Date().toISOString(),
+        details: `Entrée en stock de production : +${quantiteRealisee} ${parent.uniteMesure} de ${parent.code}`
+      });
+    }
+
     return {
       updatedArticles,
       nouveauxMouvements,

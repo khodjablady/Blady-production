@@ -299,3 +299,65 @@ export interface ControleQualiteLot {
   createdAt?: string;
 }
 
+// ==========================================
+// TRACEABILITY & LOT GENEALOGY (TRAÇABILITÉ)
+// ==========================================
+export type TypeLot = 'ProduitFini' | 'VracIntermediaire' | 'MatierePremiere' | 'Emballage';
+
+export interface LotComposantConsomme {
+  composantArticleId: number;
+  composantCode: string;
+  composantDesignation: string;
+  typeComposant: 'MatierePremiere' | 'Emballage' | 'Vrac';
+  numeroLotFournisseurOuInterne: string;
+  fournisseurNom: string;
+  numeroBL: string;
+  dateReceptionOuMelange: string;
+  quantiteConsommee: number;
+  unite: UnitType;
+  quantiteTheorique: number;
+  ecartPourcent: number;
+  statutConformiteMatiere: 'Conforme' | 'Alerte' | 'EnQuarantaine';
+  certificatFournisseurRef?: string;
+}
+
+export interface ClientExpeditionLot {
+  commandeId: number;
+  numeroCommande: string;
+  clientNom: string;
+  dateExpedition: string;
+  quantiteExpediee: number;
+  statutExpedition: 'Livre' | 'EnTransit' | 'EnPreparation';
+  bonLivraisonRef: string;
+}
+
+export interface DossierLotTracabilite {
+  id: string;
+  numeroLot: string;
+  typeLot: TypeLot;
+  articleId: number;
+  articleCode: string;
+  articleDesignation: string;
+  statutLot: 'Libere' | 'EnQuarantaine' | 'EnFabrication' | 'Epuise';
+  // Associated Manufacturing Order
+  ordreFabricationId?: number;
+  numeroOF?: string;
+  ligneFabricationNom?: string;
+  cuveFormulationNom?: string;
+  dateFabrication: string;
+  datePeremption?: string;
+  operateur: string;
+  volumeProduit: number;
+  uniteMesure: UnitType;
+  // Associated Quality Control
+  controleQualiteId?: string;
+  decisionQualite: DecisionQualite;
+  // Downward traceability: what components were incorporated into this batch?
+  composantsConsommes: LotComposantConsomme[];
+  // Upward traceability: which clients / shipments received this finished batch?
+  expeditionsClients: ClientExpeditionLot[];
+  // Notes / Quarantine / Alerts
+  remarquesAudit?: string;
+}
+
+

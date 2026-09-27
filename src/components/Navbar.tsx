@@ -19,13 +19,14 @@ import {
   CalendarRange,
   ExternalLink,
   FileText,
-  FlaskConical
+  FlaskConical,
+  GitFork
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 interface NavbarProps {
-  activeTab: 'synoptic' | 'erp' | 'mes' | 'planning' | 'quality' | 'analytics' | 'connectivity' | 'csharp' | 'maintenance';
-  setActiveTab: (tab: 'synoptic' | 'erp' | 'mes' | 'planning' | 'quality' | 'analytics' | 'connectivity' | 'csharp' | 'maintenance') => void;
+  activeTab: 'synoptic' | 'erp' | 'mes' | 'planning' | 'quality' | 'traceability' | 'analytics' | 'connectivity' | 'csharp' | 'maintenance';
+  setActiveTab: (tab: 'synoptic' | 'erp' | 'mes' | 'planning' | 'quality' | 'traceability' | 'analytics' | 'connectivity' | 'csharp' | 'maintenance') => void;
   isSimulating: boolean;
   setIsSimulating: (val: boolean) => void;
   onResetData: () => void;
@@ -142,6 +143,19 @@ export const Navbar: React.FC<NavbarProps> = ({
                   {qualityAlertCount}
                 </span>
               )}
+            </button>
+
+            <button
+              id="nav-tab-traceability"
+              onClick={() => setActiveTab('traceability')}
+              className={`flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                activeTab === 'traceability'
+                  ? 'bg-indigo-600 text-white shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+              }`}
+            >
+              <GitFork className="w-4 h-4 text-indigo-400" />
+              <span>Traçabilité Lots</span>
             </button>
 
             <button
@@ -331,6 +345,12 @@ export const Navbar: React.FC<NavbarProps> = ({
           className={`px-3 py-1 rounded whitespace-nowrap ${activeTab === 'quality' ? 'bg-emerald-600 text-white' : 'text-emerald-400'}`}
         >
           Qualité {qualityAlertCount > 0 ? `(${qualityAlertCount} alertes)` : ''}
+        </button>
+        <button
+          onClick={() => setActiveTab('traceability')}
+          className={`px-3 py-1 rounded whitespace-nowrap ${activeTab === 'traceability' ? 'bg-indigo-600 text-white' : 'text-indigo-300'}`}
+        >
+          Traçabilité
         </button>
         <button
           onClick={() => setActiveTab('analytics')}

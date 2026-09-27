@@ -15,7 +15,8 @@ import {
   BarChart3,
   Wrench,
   CalendarRange,
-  FlaskConical
+  FlaskConical,
+  GitFork
 } from 'lucide-react';
 import { Article, OrdreFabrication, MachineLigne, OeeMetrics } from '../types';
 import { ProductionPerformance } from './ProductionPerformance';
@@ -38,6 +39,7 @@ interface SynopticOverviewProps {
   onGoToMaintenance?: () => void;
   onGoToPlanning?: () => void;
   onGoToQuality?: () => void;
+  onGoToTraceability?: () => void;
   onUpdateOee?: (updated: Partial<OeeMetrics>) => void;
   thresholds?: OeeThresholds;
 }
@@ -55,6 +57,7 @@ export const SynopticOverview: React.FC<SynopticOverviewProps> = ({
   onGoToMaintenance,
   onGoToPlanning,
   onGoToQuality,
+  onGoToTraceability,
   onUpdateOee,
   thresholds = INDUSTRIAL_OEE_THRESHOLDS
 }) => {
@@ -169,6 +172,16 @@ export const SynopticOverview: React.FC<SynopticOverviewProps> = ({
               >
                 <FlaskConical className="w-4 h-4 text-emerald-400" />
                 <span>Contrôle Qualité</span>
+              </button>
+            )}
+            {onGoToTraceability && (
+              <button
+                id="btn-quick-traceability"
+                onClick={onGoToTraceability}
+                className="flex items-center space-x-2 px-3 py-2 rounded-xl text-xs font-semibold bg-indigo-950/80 hover:bg-indigo-900/90 text-indigo-300 border border-indigo-600/40 transition-colors"
+              >
+                <GitFork className="w-4 h-4 text-indigo-400" />
+                <span>Traçabilité Lots</span>
               </button>
             )}
             {onGoToMaintenance && (

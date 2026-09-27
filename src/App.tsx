@@ -9,6 +9,7 @@ import { CSharpArchitectureViewer } from './components/CSharpArchitectureViewer'
 import { JournalMaintenance } from './components/JournalMaintenance';
 import { PlanningGanttView } from './components/PlanningGanttView';
 import { QualityControlView } from './components/QualityControlView';
+import { TraceabilityView } from './components/TraceabilityView';
 import { ProductionDeclarationModal } from './components/ProductionDeclarationModal';
 import { ReceiptModal } from './components/ReceiptModal';
 import { NewOfModal } from './components/NewOfModal';
@@ -47,7 +48,7 @@ export default function App() {
   const { user, profile, loading } = useAuth();
 
   // Navigation
-  const [activeTab, setActiveTab] = useState<'synoptic' | 'erp' | 'mes' | 'planning' | 'quality' | 'analytics' | 'connectivity' | 'csharp' | 'maintenance'>('synoptic');
+  const [activeTab, setActiveTab] = useState<'synoptic' | 'erp' | 'mes' | 'planning' | 'quality' | 'traceability' | 'analytics' | 'connectivity' | 'csharp' | 'maintenance'>('synoptic');
   
   // Data state
   const [articles, setArticles] = useState<Article[]>(INITIAL_ARTICLES);
@@ -499,9 +500,31 @@ export default function App() {
 
     persistControleQualite(qc, user?.uid);
 
+    // Si le lot est mis en quarantaine, adapter le statut de l'OF correspondant
+    if (qc.numeroOF || qc.numeroLot) {
+      setOrdresFabrication(prevOfs =>
+        prevOfs.map(ofItem => {
+          if (ofItem.numeroOF === qc.numeroOF || ofItem.numeroLotFabrique === qc.numeroLot) {
+            let nouveauStatut = ofItem.statut;
+            if (qc.decision === 'EnQuarantaine' && ofItem.statut !== 'Termine') {
+              nouveauStatut = 'Interrompu';
+            } else if (qc.decision === 'Conforme' && ofItem.statut === 'ControleQualite') {
+              nouveauStatut = 'Termine';
+            }
+            if (nouveauStatut !== ofItem.statut) {
+              const updatedOf = { ...ofItem, statut: nouveauStatut };
+              persistOrdreFabrication(updatedOf, user?.uid);
+              return updatedOf;
+            }
+          }
+          return ofItem;
+        })
+      );
+    }
+
     if (qc.decision === 'EnQuarantaine' || qc.decision === 'NonConforme') {
       showNotification(
-        `ALERTE QUALITÉ CRITIQUE : Le lot ${qc.numeroLot} a été placé EN QUARANTAINE pour non-conformité analytique.`,
+        `ALERTE QUALITÉ CRITIQUE : Le lot ${qc.numeroLot} a été placé EN QUARANTAINE pour non-conformité analytique. Blocage en atelier actif.`,
         'warning'
       );
     } else {
@@ -604,6 +627,7 @@ export default function App() {
             onGoToMaintenance={() => setActiveTab('maintenance')}
             onGoToPlanning={() => setActiveTab('planning')}
             onGoToQuality={() => setActiveTab('quality')}
+            onGoToTraceability={() => setActiveTab('traceability')}
           />
         )}
 
@@ -619,6 +643,8 @@ export default function App() {
             onValiderSuggestion={handleValiderSuggestion}
             onCreerBonReception={handleOpenReceiptModal}
             onLancerProductionDepuisVente={handleLancerProductionDepuisVente}
+            onGoToTraceability={() => setActiveTab('traceability')}
+            onGoToMes={() => setActiveTab('mes')}
           />
         )}
 
@@ -632,6 +658,8 @@ export default function App() {
             onOpenDeclareModal={handleOpenDeclareModal}
             onChangerStatutOf={handleChangerStatutOf}
             onCreerOf={() => setIsNewOfModalOpen(true)}
+            onGoToQuality={() => setActiveTab('quality')}
+            onGoToTraceability={() => setActiveTab('traceability')}
           />
         )}
 
@@ -654,6 +682,15 @@ export default function App() {
             ordresFabrication={ordresFabrication}
             onSaveControle={handleSaveControleQualite}
             onDeleteControle={handleDeleteControleQualite}
+          />
+        )}
+
+        {activeTab === 'traceability' && (
+          <TraceabilityView
+            ordresFabrication={ordresFabrication}
+            articles={articles}
+            controlesQualite={controlesQualite}
+            onGoToQuality={() => setActiveTab('quality')}
           />
         )}
 

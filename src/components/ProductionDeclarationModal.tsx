@@ -135,7 +135,7 @@ export const ProductionDeclarationModal: React.FC<ProductionDeclarationModalProp
             </div>
           </div>
 
-          {/* Live calculation banner */}
+            {/* Live calculation banner */}
           <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-3">
             <div className="flex items-center justify-between text-xs">
               <span className="font-bold text-white flex items-center gap-1.5">
@@ -146,6 +146,21 @@ export const ProductionDeclarationModal: React.FC<ProductionDeclarationModalProp
                 MrpStockService.AppliquerPostDeductionStockAsync
               </span>
             </div>
+
+            {/* Finished Good Stock Credit Notice */}
+            {article && (
+              <div className="p-2.5 rounded-lg bg-emerald-950/40 border border-emerald-500/30 text-xs flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+                  <span className="text-emerald-200">
+                    Entrée en stock de produit fini : <strong className="text-white">{article.code}</strong>
+                  </span>
+                </div>
+                <span className="font-mono text-emerald-400 font-bold">
+                  +{quantiteRealisee} {article.uniteMesure} (Nouveau stock : {article.stockTheorique + quantiteRealisee} {article.uniteMesure})
+                </span>
+              </div>
+            )}
 
             <div className="overflow-x-auto">
               <table className="w-full text-left text-[11px]">

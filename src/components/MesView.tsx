@@ -13,7 +13,9 @@ import {
   UserCheck,
   RotateCw,
   PlusCircle,
-  FileCheck
+  FileCheck,
+  FlaskConical,
+  ExternalLink
 } from 'lucide-react';
 import { OrdreFabrication, Article, MachineLigne, OeeMetrics } from '../types';
 
@@ -26,6 +28,8 @@ interface MesViewProps {
   onOpenDeclareModal: (of?: OrdreFabrication) => void;
   onChangerStatutOf: (ofId: number, nouveauStatut: OrdreFabrication['statut']) => void;
   onCreerOf: () => void;
+  onGoToQuality?: (ofItem?: OrdreFabrication) => void;
+  onGoToTraceability?: (lotNumber?: string) => void;
 }
 
 export const MesView: React.FC<MesViewProps> = ({
@@ -36,7 +40,9 @@ export const MesView: React.FC<MesViewProps> = ({
   onUpdateOee,
   onOpenDeclareModal,
   onChangerStatutOf,
-  onCreerOf
+  onCreerOf,
+  onGoToQuality,
+  onGoToTraceability
 }) => {
   const [activeSubTab, setActiveSubTab] = useState<'of' | 'declaration' | 'trs' | 'tracabilite'>('of');
   const [selectedLotForTrace, setSelectedLotForTrace] = useState<string>('LOT-VIR-2609-A1');
@@ -211,12 +217,12 @@ export const MesView: React.FC<MesViewProps> = ({
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-end space-x-2">
+                    <div className="flex items-center justify-end space-x-2 flex-wrap gap-y-1">
                       {ofItem.statut !== 'Termine' ? (
                         <>
                           <button
                             onClick={() => onOpenDeclareModal(ofItem)}
-                            className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold shadow-sm transition-colors flex items-center space-x-1"
+                            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold shadow-sm transition-colors flex items-center space-x-1"
                           >
                             <PackageCheck className="w-3.5 h-3.5" />
                             <span>Déclarer Fin</span>
@@ -232,8 +238,30 @@ export const MesView: React.FC<MesViewProps> = ({
                         </>
                       ) : (
                         <span className="text-xs text-emerald-400 flex items-center gap-1 font-semibold">
-                          <CheckCircle2 className="w-4 h-4" /> OF Clôturé & Post-Déduit
+                          <CheckCircle2 className="w-4 h-4" /> OF Clôturé
                         </span>
+                      )}
+
+                      {onGoToQuality && (
+                        <button
+                          onClick={() => onGoToQuality(ofItem)}
+                          className="px-2.5 py-1.5 bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 border border-emerald-700/50 rounded-lg text-xs font-medium transition-colors flex items-center space-x-1"
+                          title="Effectuer ou consulter le contrôle qualité de ce lot"
+                        >
+                          <FlaskConical className="w-3.5 h-3.5 text-emerald-400" />
+                          <span>CQ</span>
+                        </button>
+                      )}
+
+                      {onGoToTraceability && (
+                        <button
+                          onClick={() => onGoToTraceability(ofItem.numeroLotFabrique)}
+                          className="px-2.5 py-1.5 bg-indigo-950/80 hover:bg-indigo-900 text-indigo-300 border border-indigo-700/50 rounded-lg text-xs font-medium transition-colors flex items-center space-x-1"
+                          title="Consulter l'arbre de traçabilité de ce lot"
+                        >
+                          <GitFork className="w-3.5 h-3.5 text-indigo-400" />
+                          <span>Trace</span>
+                        </button>
                       )}
                     </div>
                   </div>
@@ -424,8 +452,19 @@ export const MesView: React.FC<MesViewProps> = ({
                   className="bg-slate-950 border border-slate-800 rounded-lg text-xs text-sky-300 px-3 py-1.5 focus:outline-none focus:border-sky-500 font-mono"
                 >
                   <option value="LOT-VIR-2609-A1">LOT-VIR-2609-A1 (Solution Virucide)</option>
-                  <option value="LOT-SAV-2609-C3">LOT-SAV-2609-C3 (Savon Végétal)</option>
+                  <option value="LOT-SAV-2609-D4">LOT-SAV-2609-D4 (Savon Végétal)</option>
                 </select>
+
+                {onGoToTraceability && (
+                  <button
+                    onClick={() => onGoToTraceability(selectedLotForTrace)}
+                    className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white transition-colors shadow-sm"
+                    title="Basculer vers la vue complète Traçabilité avec arbre dynamique D3.js"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    <span>Arbre D3.js Complet</span>
+                  </button>
+                )}
               </div>
             </div>
 

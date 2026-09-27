@@ -15,7 +15,8 @@ import {
   Droplets,
   Building2,
   Calendar,
-  CheckCircle2
+  CheckCircle2,
+  GitFork
 } from 'lucide-react';
 import { Article, Nomenclature, CommandeClient, SuggestionAchat, BonReception, MouvementStock } from '../types';
 
@@ -30,6 +31,8 @@ interface ErpViewProps {
   onValiderSuggestion: (id: number) => void;
   onCreerBonReception: (suggestion: SuggestionAchat) => void;
   onLancerProductionDepuisVente: (commandeId: number, ligneId: number) => void;
+  onGoToTraceability?: (lotNumber?: string) => void;
+  onGoToMes?: () => void;
 }
 
 export const ErpView: React.FC<ErpViewProps> = ({
@@ -42,7 +45,9 @@ export const ErpView: React.FC<ErpViewProps> = ({
   onLancerMrp,
   onValiderSuggestion,
   onCreerBonReception,
-  onLancerProductionDepuisVente
+  onLancerProductionDepuisVente,
+  onGoToTraceability,
+  onGoToMes
 }) => {
   const [activeSubTab, setActiveSubTab] = useState<'articles' | 'nomenclatures' | 'ventes' | 'achats' | 'receptions' | 'mouvements'>('articles');
   const [searchTerm, setSearchTerm] = useState('');
@@ -523,9 +528,20 @@ export const ErpView: React.FC<ErpViewProps> = ({
                         {bl.lignes.map(l => {
                           const art = articles.find(a => a.id === l.articleId);
                           return (
-                            <div key={l.id} className="text-[11px] font-mono">
+                            <div key={l.id} className="text-[11px] font-mono flex items-center flex-wrap gap-1">
                               <span className="text-sky-400 font-bold">{art?.code}</span> : {l.quantiteRecue} {art?.uniteMesure} 
-                              <span className="text-slate-400 ml-2">(Lot: {l.numeroLotFournisseur})</span>
+                              {l.numeroLotFournisseur && onGoToTraceability ? (
+                                <button
+                                  onClick={() => onGoToTraceability(l.numeroLotFournisseur)}
+                                  className="text-indigo-400 hover:text-indigo-300 ml-1.5 inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-indigo-950/60 border border-indigo-700/40 hover:border-indigo-500 transition-colors"
+                                  title="Inspecter ce lot dans l'arbre de traçabilité"
+                                >
+                                  <GitFork className="w-3 h-3" />
+                                  <span>Lot: {l.numeroLotFournisseur}</span>
+                                </button>
+                              ) : (
+                                <span className="text-slate-400 ml-2">(Lot: {l.numeroLotFournisseur})</span>
+                              )}
                             </div>
                           );
                         })}
@@ -585,7 +601,22 @@ export const ErpView: React.FC<ErpViewProps> = ({
                           {mvt.referenceDocument}
                         </td>
                         <td className="p-3 font-mono text-[11px] text-sky-400">
-                          {mvt.numeroLot || '—'}
+                          {mvt.numeroLot ? (
+                            onGoToTraceability ? (
+                              <button
+                                onClick={() => onGoToTraceability(mvt.numeroLot)}
+                                className="text-sky-400 hover:text-indigo-300 inline-flex items-center gap-1 hover:underline transition-colors"
+                                title="Inspecter ce lot dans l'arbre de traçabilité"
+                              >
+                                <GitFork className="w-3 h-3 text-indigo-400" />
+                                <span>{mvt.numeroLot}</span>
+                              </button>
+                            ) : (
+                              <span>{mvt.numeroLot}</span>
+                            )
+                          ) : (
+                            <span className="text-slate-500">—</span>
+                          )}
                         </td>
                         <td className="p-3 text-[11px] text-slate-400">
                           {mvt.details || '—'}
