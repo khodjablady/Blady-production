@@ -21,6 +21,7 @@ import {
 import { Article, OeeMetrics } from '../types';
 import { generate30DaysHistory, DailyStockDataPoint, DailyOeeDataPoint } from '../data/analyticsHistoryData';
 import { OeeWeeklyEvolutionChart } from './OeeWeeklyEvolutionChart';
+import { PerformanceTrendPredictor } from './PerformanceTrendPredictor';
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -50,7 +51,7 @@ interface AnalyticsViewProps {
 }
 
 type PeriodDays = 7 | 14 | 30;
-type ViewCategory = 'all' | 'oee' | 'stocks' | 'correlation';
+type ViewCategory = 'all' | 'oee' | 'predictions' | 'stocks' | 'correlation';
 
 export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
   articles,
@@ -275,6 +276,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
                 [
                   { id: 'all', label: 'Vue Globale' },
                   { id: 'oee', label: 'MES (OEE / TRS)' },
+                  { id: 'predictions', label: 'Prédictions J+3' },
                   { id: 'stocks', label: 'ERP (Stocks)' },
                   { id: 'correlation', label: 'Corrélation' }
                 ] as { id: ViewCategory; label: string }[]
@@ -431,8 +433,13 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
       </div>
 
       {/* SECTION 1: 7-DAY OEE WEEKLY EVOLUTION CHART (RECHARTS) */}
-      {(selectedCategory === 'all' || selectedCategory === 'oee') && (
+      {(selectedCategory === 'all' || selectedCategory === 'oee' || selectedCategory === 'predictions') && (
         <OeeWeeklyEvolutionChart currentOee={oee} onGoToMes={onGoToMes} />
+      )}
+
+      {/* SECTION 1B: 3-DAY PERFORMANCE TREND PREDICTOR (STATISTICAL INFERENCE) */}
+      {(selectedCategory === 'all' || selectedCategory === 'oee' || selectedCategory === 'predictions') && (
+        <PerformanceTrendPredictor currentOee={oee} />
       )}
 
       {/* SECTION 2: MES OEE PERFORMANCE GRAPHS */}
