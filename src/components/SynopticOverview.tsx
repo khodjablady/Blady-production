@@ -12,7 +12,9 @@ import {
   TrendingUp,
   FileCode2,
   PackageCheck,
-  BarChart3
+  BarChart3,
+  Wrench,
+  CalendarRange
 } from 'lucide-react';
 import { Article, OrdreFabrication, MachineLigne, OeeMetrics } from '../types';
 import { ProductionPerformance } from './ProductionPerformance';
@@ -32,6 +34,8 @@ interface SynopticOverviewProps {
   onGoToMes: () => void;
   onGoToCSharp: () => void;
   onGoToAnalytics?: () => void;
+  onGoToMaintenance?: () => void;
+  onGoToPlanning?: () => void;
   onUpdateOee?: (updated: Partial<OeeMetrics>) => void;
   thresholds?: OeeThresholds;
 }
@@ -46,6 +50,8 @@ export const SynopticOverview: React.FC<SynopticOverviewProps> = ({
   onGoToMes,
   onGoToCSharp,
   onGoToAnalytics,
+  onGoToMaintenance,
+  onGoToPlanning,
   onUpdateOee,
   thresholds = INDUSTRIAL_OEE_THRESHOLDS
 }) => {
@@ -142,6 +148,26 @@ export const SynopticOverview: React.FC<SynopticOverviewProps> = ({
               <TrendingUp className="w-4 h-4 text-sky-400" />
               <span>Calcul MRP (ERP)</span>
             </button>
+            {onGoToPlanning && (
+              <button
+                id="btn-quick-planning"
+                onClick={onGoToPlanning}
+                className="flex items-center space-x-2 px-3 py-2 rounded-xl text-xs font-semibold bg-indigo-950/80 hover:bg-indigo-900/90 text-indigo-300 border border-indigo-600/40 transition-colors"
+              >
+                <CalendarRange className="w-4 h-4 text-indigo-400" />
+                <span>Planning Gantt</span>
+              </button>
+            )}
+            {onGoToMaintenance && (
+              <button
+                id="btn-quick-maintenance"
+                onClick={onGoToMaintenance}
+                className="flex items-center space-x-2 px-3 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 transition-colors"
+              >
+                <Wrench className="w-4 h-4 text-amber-400" />
+                <span>Journal Maintenance</span>
+              </button>
+            )}
             <button
               id="btn-quick-csharp"
               onClick={onGoToCSharp}

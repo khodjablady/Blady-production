@@ -6,6 +6,8 @@ import { MesView } from './components/MesView';
 import { AnalyticsView } from './components/AnalyticsView';
 import { IndustrialConnectivityView } from './components/IndustrialConnectivityView';
 import { CSharpArchitectureViewer } from './components/CSharpArchitectureViewer';
+import { JournalMaintenance } from './components/JournalMaintenance';
+import { PlanningGanttView } from './components/PlanningGanttView';
 import { ProductionDeclarationModal } from './components/ProductionDeclarationModal';
 import { ReceiptModal } from './components/ReceiptModal';
 import { NewOfModal } from './components/NewOfModal';
@@ -18,24 +20,29 @@ import {
   INITIAL_MOUVEMENTS_STOCK, 
   INITIAL_ORDRES_FABRICATION, 
   INITIAL_MACHINES, 
-  INITIAL_OEE 
+  INITIAL_OEE,
+  INITIAL_INTERVENTIONS
 } from './data/initialData';
 import { MrpStockEngine } from './services/mrpService';
-import { Article, Nomenclature, CommandeClient, SuggestionAchat, BonReception, MouvementStock, OrdreFabrication, MachineLigne, OeeMetrics } from './types';
-import { CheckCircle2, AlertTriangle, Info, X } from 'lucide-react';
+import { Article, Nomenclature, CommandeClient, SuggestionAchat, BonReception, MouvementStock, OrdreFabrication, MachineLigne, OeeMetrics, InterventionMaintenance } from './types';
+import { CheckCircle2, AlertTriangle, Info, X, Factory } from 'lucide-react';
 import { useAuth } from './context/AuthContext';
+import { AuthScreen } from './components/AuthScreen';
 import { 
   subscribeToOrdresFabrication, 
   persistOrdreFabrication, 
   subscribeToMouvementsStock, 
-  persistMouvementStock 
+  persistMouvementStock,
+  subscribeToInterventionsMaintenance,
+  persistInterventionMaintenance,
+  deleteInterventionMaintenance
 } from './services/firestoreService';
 
 export default function App() {
-  const { user, profile } = useAuth();
+  const { user, profile, loading } = useAuth();
 
   // Navigation
-  const [activeTab, setActiveTab] = useState<'synoptic' | 'erp' | 'mes' | 'analytics' | 'connectivity' | 'csharp'>('synoptic');
+  const [activeTab, setActiveTab] = useState<'synoptic' | 'erp' | 'mes' | 'planning' | 'analytics' | 'connectivity' | 'csharp' | 'maintenance'>('synoptic');
   
   // Data state
   const [articles, setArticles] = useState<Article[]>(INITIAL_ARTICLES);
@@ -47,6 +54,7 @@ export default function App() {
   const [ordresFabrication, setOrdresFabrication] = useState<OrdreFabrication[]>(INITIAL_ORDRES_FABRICATION);
   const [machines, setMachines] = useState<MachineLigne[]>(INITIAL_MACHINES);
   const [oee, setOee] = useState<OeeMetrics>(INITIAL_OEE);
+  const [interventions, setInterventions] = useState<InterventionMaintenance[]>(INITIAL_INTERVENTIONS);
 
   // Simulation & Modal state
   const [isSimulating, setIsSimulating] = useState<boolean>(true);
@@ -89,9 +97,16 @@ export default function App() {
       }
     });
 
+    const unsubMaint = subscribeToInterventionsMaintenance((cloudInterventions) => {
+      if (cloudInterventions && cloudInterventions.length > 0) {
+        setInterventions(cloudInterventions);
+      }
+    });
+
     return () => {
       unsubOfs();
       unsubMvts();
+      unsubMaint();
     };
   }, []);
 
@@ -393,6 +408,38 @@ export default function App() {
     showNotification(`Statut de l'OF mis à jour : ${nouveauStatut}`, 'info');
   };
 
+  // 7b. Update OF Schedule (Drag & Drop or Manual adjustment)
+  const handleUpdateOfSchedule = (ofId: number, newDate: string, newLineId?: number) => {
+    let updatedOf: OrdreFabrication | undefined;
+    setOrdresFabrication(prev =>
+      prev.map(o => {
+        if (o.id === ofId) {
+          const updated: OrdreFabrication = {
+            ...o,
+            datePlanifiee: newDate,
+            ligneProductionId: newLineId !== undefined ? newLineId : o.ligneProductionId
+          };
+          updatedOf = updated;
+          persistOrdreFabrication(updated, user?.uid);
+          return updated;
+        }
+        return o;
+      })
+    );
+
+    const dObj = new Date(newDate);
+    const dayFormatted = dObj.toLocaleDateString('fr-FR', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long'
+    });
+
+    showNotification(
+      `Planning Gantt mis à jour : ${updatedOf?.numeroOF || `OF #${ofId}`} reprogrammé au ${dayFormatted} (Ligne 0${newLineId || updatedOf?.ligneProductionId}).`,
+      'success'
+    );
+  };
+
   // 8. Machine status change
   const handleMachineStateChange = (machineId: number, newStatut: MachineLigne['statut']) => {
     setMachines(prev =>
@@ -401,7 +448,30 @@ export default function App() {
     showNotification(`État machine mis à jour : ${newStatut}`, 'info');
   };
 
-  // 9. Reset data
+  // 9. Maintenance intervention management
+  const handleSaveIntervention = (newIntervention: InterventionMaintenance, remettreEnMarche: boolean) => {
+    setInterventions(prev => [newIntervention, ...prev]);
+    persistInterventionMaintenance(newIntervention, user?.uid);
+
+    if (remettreEnMarche) {
+      setMachines(prev =>
+        prev.map(m => m.id === newIntervention.machineId ? { ...m, statut: 'EnMarche' } : m)
+      );
+    }
+
+    showNotification(
+      `Intervention ${newIntervention.id} consignée pour ${newIntervention.machineNom} (${newIntervention.technicien}).${remettreEnMarche ? ' Machine remise en service nominal.' : ''}`,
+      'success'
+    );
+  };
+
+  const handleDeleteIntervention = (interventionId: string) => {
+    setInterventions(prev => prev.filter(i => i.id !== interventionId));
+    deleteInterventionMaintenance(interventionId);
+    showNotification(`Intervention ${interventionId} retirée du journal.`, 'info');
+  };
+
+  // 10. Reset data
   const handleResetData = () => {
     setArticles(INITIAL_ARTICLES);
     setCommandesClients(INITIAL_COMMANDES_CLIENTS);
@@ -411,8 +481,29 @@ export default function App() {
     setOrdresFabrication(INITIAL_ORDRES_FABRICATION);
     setMachines(INITIAL_MACHINES);
     setOee(INITIAL_OEE);
+    setInterventions(INITIAL_INTERVENTIONS);
     showNotification("Données d'usine réinitialisées aux valeurs nominales du projet C#.", 'info');
   };
+
+  // 0. Authentication loading screen
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center p-4">
+        <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-sky-600 to-indigo-600 flex items-center justify-center shadow-xl shadow-sky-950/80 border border-sky-400/30 animate-pulse mb-4">
+          <Factory className="w-8 h-8 text-white" />
+        </div>
+        <div className="flex items-center space-x-3 text-slate-300 text-sm font-medium">
+          <div className="w-4 h-4 border-2 border-sky-400 border-t-transparent rounded-full animate-spin" />
+          <span>Vérification des accès BladyProduction MES/ERP...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // 0. Gate all pages behind the authentication screen (displayed before any page)
+  if (!user) {
+    return <AuthScreen />;
+  }
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-sky-500 selection:text-white">
@@ -461,6 +552,8 @@ export default function App() {
             onGoToMes={() => setActiveTab('mes')}
             onGoToCSharp={() => setActiveTab('csharp')}
             onGoToAnalytics={() => setActiveTab('analytics')}
+            onGoToMaintenance={() => setActiveTab('maintenance')}
+            onGoToPlanning={() => setActiveTab('planning')}
           />
         )}
 
@@ -492,6 +585,18 @@ export default function App() {
           />
         )}
 
+        {activeTab === 'planning' && (
+          <PlanningGanttView
+            ordresFabrication={ordresFabrication}
+            articles={articles}
+            machines={machines}
+            onUpdateOfSchedule={handleUpdateOfSchedule}
+            onChangerStatutOf={handleChangerStatutOf}
+            onCreerOf={() => setIsNewOfModalOpen(true)}
+            onOpenDeclareModal={handleOpenDeclareModal}
+          />
+        )}
+
         {activeTab === 'analytics' && (
           <AnalyticsView
             articles={articles}
@@ -499,6 +604,16 @@ export default function App() {
             onGoToErp={() => setActiveTab('erp')}
             onGoToMes={() => setActiveTab('mes')}
             onGoToCSharp={() => setActiveTab('csharp')}
+          />
+        )}
+
+        {activeTab === 'maintenance' && (
+          <JournalMaintenance
+            machines={machines}
+            interventions={interventions}
+            onSaveIntervention={handleSaveIntervention}
+            onDeleteIntervention={handleDeleteIntervention}
+            onMachineStateChange={handleMachineStateChange}
           />
         )}
 

@@ -102,6 +102,9 @@ export interface OrdreFabrication {
   commandeClientId?: number;
   tempsCycleSecondes: number;
   tempsProductionMinutes: number;
+  dureeEstimeeHeures?: number;
+  priorite?: 'Basse' | 'Normale' | 'Haute' | 'Urgente';
+  dateFinEstimee?: string;
 }
 
 export interface DeclarationProduction {
@@ -229,4 +232,24 @@ export interface ModbusLogEntry {
   latencyMs: number;
   status: 'SUCCESS' | 'TIMEOUT' | 'EXCEPTION_02' | 'ILLEGAL_DATA';
   details?: string;
+}
+
+export type InterventionType = 'Curative' | 'Preventive' | 'Ameliorative' | 'Urgente';
+export type PostInterventionStatus = 'Operationnelle' | 'EnObservation' | 'AttentePieces';
+
+export interface InterventionMaintenance {
+  id: string;
+  date: string; // ISO string
+  machineId: number;
+  machineNom: string;
+  technicien: string;
+  descriptionPanne: string;
+  typeIntervention: InterventionType;
+  dureeMinutes: number;
+  statutMachineApres: PostInterventionStatus;
+  piecesRemplacees?: string;
+  impactTrs?: string;
+  remettreEnMarche?: boolean;
+  createdBy?: string;
+  createdAt?: string;
 }

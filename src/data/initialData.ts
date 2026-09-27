@@ -1,4 +1,4 @@
-import { Article, Nomenclature, CommandeClient, SuggestionAchat, BonReception, MouvementStock, OrdreFabrication, MachineLigne, OeeMetrics } from '../types';
+import { Article, Nomenclature, CommandeClient, SuggestionAchat, BonReception, MouvementStock, OrdreFabrication, MachineLigne, OeeMetrics, InterventionMaintenance } from '../types';
 
 export const INITIAL_ARTICLES: Article[] = [
   {
@@ -350,7 +350,9 @@ export const INITIAL_ORDRES_FABRICATION: OrdreFabrication[] = [
     operateur: 'Julien Mercier',
     commandeClientId: 1,
     tempsCycleSecondes: 3.6, // 1000 flacons / h
-    tempsProductionMinutes: 145
+    tempsProductionMinutes: 145,
+    dureeEstimeeHeures: 6,
+    priorite: 'Urgente'
   },
   {
     id: 2,
@@ -366,7 +368,97 @@ export const INITIAL_ORDRES_FABRICATION: OrdreFabrication[] = [
     operateur: 'Équipe Matin (Poste 1)',
     commandeClientId: 2,
     tempsCycleSecondes: 3.6,
-    tempsProductionMinutes: 0
+    tempsProductionMinutes: 0,
+    dureeEstimeeHeures: 8,
+    priorite: 'Haute'
+  },
+  {
+    id: 4,
+    numeroOF: 'OF-2026-106',
+    articleId: 1,
+    quantiteCible: 1000,
+    quantiteProduite: 0,
+    quantiteRebutee: 0,
+    datePlanifiee: '2026-09-23T07:00:00Z',
+    statut: 'Planifie',
+    ligneProductionId: 1,
+    numeroLotFabrique: 'LOT-VIR-2609-C3',
+    operateur: 'Équipe Après-midi',
+    commandeClientId: 2,
+    tempsCycleSecondes: 3.6,
+    tempsProductionMinutes: 0,
+    dureeEstimeeHeures: 7,
+    priorite: 'Normale'
+  },
+  {
+    id: 5,
+    numeroOF: 'OF-2026-107',
+    articleId: 2,
+    quantiteCible: 350,
+    quantiteProduite: 120,
+    quantiteRebutee: 2,
+    datePlanifiee: '2026-09-21T08:30:00Z',
+    statut: 'EnMelange',
+    ligneProductionId: 2,
+    numeroLotFabrique: 'LOT-SAV-2609-D4',
+    operateur: 'Sophie Girard',
+    commandeClientId: 3,
+    tempsCycleSecondes: 12.0,
+    tempsProductionMinutes: 80,
+    dureeEstimeeHeures: 6,
+    priorite: 'Haute'
+  },
+  {
+    id: 6,
+    numeroOF: 'OF-2026-108',
+    articleId: 2,
+    quantiteCible: 500,
+    quantiteProduite: 0,
+    quantiteRebutee: 0,
+    datePlanifiee: '2026-09-23T06:00:00Z',
+    statut: 'Planifie',
+    ligneProductionId: 2,
+    numeroLotFabrique: 'LOT-SAV-2609-E5',
+    operateur: 'Marc Vasseur',
+    commandeClientId: 3,
+    tempsCycleSecondes: 12.0,
+    tempsProductionMinutes: 0,
+    dureeEstimeeHeures: 9,
+    priorite: 'Normale'
+  },
+  {
+    id: 7,
+    numeroOF: 'OF-2026-109',
+    articleId: 1,
+    quantiteCible: 1500,
+    quantiteProduite: 0,
+    quantiteRebutee: 0,
+    datePlanifiee: '2026-09-24T06:00:00Z',
+    statut: 'Planifie',
+    ligneProductionId: 1,
+    numeroLotFabrique: 'LOT-VIR-2609-F6',
+    operateur: 'Équipe Matin (Poste 1)',
+    tempsCycleSecondes: 3.6,
+    tempsProductionMinutes: 0,
+    dureeEstimeeHeures: 10,
+    priorite: 'Normale'
+  },
+  {
+    id: 8,
+    numeroOF: 'OF-2026-110',
+    articleId: 2,
+    quantiteCible: 250,
+    quantiteProduite: 0,
+    quantiteRebutee: 0,
+    datePlanifiee: '2026-09-25T07:00:00Z',
+    statut: 'Planifie',
+    ligneProductionId: 2,
+    numeroLotFabrique: 'LOT-SAV-2609-G7',
+    operateur: 'Marc Vasseur',
+    tempsCycleSecondes: 12.0,
+    tempsProductionMinutes: 0,
+    dureeEstimeeHeures: 5,
+    priorite: 'Basse'
   },
   {
     id: 3,
@@ -382,7 +474,9 @@ export const INITIAL_ORDRES_FABRICATION: OrdreFabrication[] = [
     operateur: 'Marc Vasseur',
     commandeClientId: 3,
     tempsCycleSecondes: 12.0,
-    tempsProductionMinutes: 190
+    tempsProductionMinutes: 190,
+    dureeEstimeeHeures: 5,
+    priorite: 'Normale'
   }
 ];
 
@@ -452,3 +546,81 @@ export const INITIAL_OEE: OeeMetrics = {
   piecesBonnes: 350,
   piecesRebuts: 4
 };
+
+export const INITIAL_INTERVENTIONS: InterventionMaintenance[] = [
+  {
+    id: 'MAINT-2026-001',
+    date: '2026-09-24T14:30:00Z',
+    machineId: 1,
+    machineNom: 'Cuve Réacteur Agité R-5000L (Mélange)',
+    technicien: 'Laurent Dubois',
+    descriptionPanne: 'Fuite sur le presse-étoupe de l\'arbre d\'agitation et échauffement palier haut (58°C). Remplacement de la garniture mécanique double, vidange et lubrification à la graisse alimentaire NSF-H1.',
+    typeIntervention: 'Curative',
+    dureeMinutes: 55,
+    statutMachineApres: 'Operationnelle',
+    piecesRemplacees: 'Garniture mécanique 65mm carbure de silicium, joint torique EPDM',
+    impactTrs: 'Arrêt de 55 min - perte estimée 2.1% de disponibilité sur le poste',
+    createdBy: 'system',
+    createdAt: '2026-09-24T15:30:00Z'
+  },
+  {
+    id: 'MAINT-2026-002',
+    date: '2026-09-22T08:15:00Z',
+    machineId: 3,
+    machineNom: 'Remplisseuse Volumétrique Rotative 12 Becs',
+    technicien: 'Marc Vasseur',
+    descriptionPanne: 'Goutte résiduelle et écart volumétrique constaté sur le bec de remplissage n°4 (-14ml sur flacons 1L). Remplacement du clapet anti-goutte en silicone et recalibrage micrométrique du cylindre doseur.',
+    typeIntervention: 'Curative',
+    dureeMinutes: 40,
+    statutMachineApres: 'Operationnelle',
+    piecesRemplacees: 'Clapet silicone bague 28/410, membrane doseuse PTFE',
+    impactTrs: 'Arrêt partiel 40 min, aucun rebut généré après recalibration',
+    createdBy: 'system',
+    createdAt: '2026-09-22T09:00:00Z'
+  },
+  {
+    id: 'MAINT-2026-003',
+    date: '2026-09-18T10:00:00Z',
+    machineId: 2,
+    machineNom: 'Homogénéisateur Haute Pression H-300',
+    technicien: 'Sophie Girard',
+    descriptionPanne: 'Chute brutale de la pression de consigne (chute de 140 bar à 92 bar avec oscillations). Remplacement du clapet haute pression céramique usé et purge d\'air du collecteur hydraulique.',
+    typeIntervention: 'Curative',
+    dureeMinutes: 70,
+    statutMachineApres: 'Operationnelle',
+    piecesRemplacees: 'Siège et bille clapet céramique 300 bar, pack de joints d\'étanchéité haute pression',
+    impactTrs: 'Arrêt complet de ligne 70 min, homogénéité validée par contrôle labo',
+    createdBy: 'system',
+    createdAt: '2026-09-18T11:20:00Z'
+  },
+  {
+    id: 'MAINT-2026-004',
+    date: '2026-09-15T15:20:00Z',
+    machineId: 4,
+    machineNom: 'Boucheuse Automatique Servomoteur',
+    technicien: 'Julien Mercier',
+    descriptionPanne: 'Défaut de serrage sur les bouchons spray et alarme dépassement de couple sur l\'axe d\'asservissement. Recalibration du couple nominal à 2.8 N.m, nettoyage et remplacement des patins de serrage usés.',
+    typeIntervention: 'Preventive',
+    dureeMinutes: 25,
+    statutMachineApres: 'Operationnelle',
+    piecesRemplacees: '4 patins de préhension élastomère nitrile',
+    impactTrs: 'Maintenance préventive planifiée pendant changement de série (0 impact TRS)',
+    createdBy: 'system',
+    createdAt: '2026-09-15T15:50:00Z'
+  },
+  {
+    id: 'MAINT-2026-005',
+    date: '2026-09-10T11:45:00Z',
+    machineId: 5,
+    machineNom: 'Étiqueteuse Linéaire Double Face Haute Vitesse',
+    technicien: 'Laurent Dubois',
+    descriptionPanne: 'Bourrage récurrent de la bande d\'étiquettes et désynchronisation de la cellule photoélectrique de détection d\'intervalle. Dépoussiérage optique, tension du rouleau dérouleur et ajustement du seuil contraste.',
+    typeIntervention: 'Curative',
+    dureeMinutes: 30,
+    statutMachineApres: 'Operationnelle',
+    piecesRemplacees: 'Ressort de rappel du galet d\'entraînement',
+    impactTrs: 'Cadence ralentie pendant 15 min puis reprise nominale',
+    createdBy: 'system',
+    createdAt: '2026-09-10T12:20:00Z'
+  }
+];

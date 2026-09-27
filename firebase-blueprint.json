@@ -52,8 +52,16 @@
         },
         "statut": {
           "type": "string",
-          "enum": ["Planifie", "EnMelange", "EnConditionnement", "Termine", "Annule"],
+          "enum": ["Planifie", "EnPreparation", "EnMelange", "EnConditionnement", "ControleQualite", "Termine", "Annule", "Interrompu"],
           "description": "Workflow execution status"
+        },
+        "datePlanifiee": {
+          "type": "string",
+          "description": "Scheduled start ISO timestamp"
+        },
+        "ligneProductionId": {
+          "type": "number",
+          "description": "Target production line ID"
         },
         "createdBy": {
           "type": "string",
@@ -102,6 +110,60 @@
         }
       },
       "required": ["id", "date", "articleCode", "type", "quantite", "createdBy"]
+    },
+    "InterventionMaintenanceDoc": {
+      "title": "InterventionMaintenanceDoc",
+      "description": "Log entry of maintenance intervention on factory machines",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Intervention unique ID"
+        },
+        "date": {
+          "type": "string",
+          "description": "ISO timestamp of the intervention"
+        },
+        "machineId": {
+          "type": "number",
+          "description": "ID of the target machine"
+        },
+        "machineNom": {
+          "type": "string",
+          "description": "Name of the target machine"
+        },
+        "technicien": {
+          "type": "string",
+          "description": "Name of technician who performed the repair"
+        },
+        "descriptionPanne": {
+          "type": "string",
+          "description": "Detailed description of the repaired breakdown/fault"
+        },
+        "typeIntervention": {
+          "type": "string",
+          "enum": ["Curative", "Preventive", "Ameliorative", "Urgente"],
+          "description": "Nature of intervention"
+        },
+        "dureeMinutes": {
+          "type": "number",
+          "description": "Duration in minutes"
+        },
+        "statutMachineApres": {
+          "type": "string",
+          "enum": ["Operationnelle", "EnObservation", "AttentePieces"],
+          "description": "Status of machine after repair"
+        },
+        "piecesRemplacees": {
+          "type": "string",
+          "description": "Spare parts replaced"
+        },
+        "createdBy": {
+          "type": "string",
+          "description": "Author UID"
+        }
+      },
+      "required": ["id", "date", "machineId", "machineNom", "technicien", "descriptionPanne", "createdBy"]
     }
   },
   "firestore": {
@@ -116,6 +178,10 @@
     "/mouvements_stock/{mouvementId}": {
       "schema": "MouvementStockDoc",
       "description": "Immutable ledger of inventory transactions"
+    },
+    "/interventions_maintenance/{interventionId}": {
+      "schema": "InterventionMaintenanceDoc",
+      "description": "Audit log of machine maintenance and repairs"
     }
   }
 }

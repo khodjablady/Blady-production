@@ -20,6 +20,7 @@ import {
 } from 'recharts';
 import { Article, OeeMetrics } from '../types';
 import { generate30DaysHistory, DailyStockDataPoint, DailyOeeDataPoint } from '../data/analyticsHistoryData';
+import { OeeWeeklyEvolutionChart } from './OeeWeeklyEvolutionChart';
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -429,7 +430,12 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
         </div>
       </div>
 
-      {/* SECTION 1: MES OEE PERFORMANCE GRAPHS */}
+      {/* SECTION 1: 7-DAY OEE WEEKLY EVOLUTION CHART (RECHARTS) */}
+      {(selectedCategory === 'all' || selectedCategory === 'oee') && (
+        <OeeWeeklyEvolutionChart currentOee={oee} onGoToMes={onGoToMes} />
+      )}
+
+      {/* SECTION 2: MES OEE PERFORMANCE GRAPHS */}
       {(selectedCategory === 'all' || selectedCategory === 'oee') && (
         <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-lg space-y-5">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">

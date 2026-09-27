@@ -24,12 +24,14 @@ service cloud.firestore {
 
     function isValidOf(data) {
       return data.keys().hasAll(['id', 'articleCode', 'quantiteDemandee', 'statut', 'createdBy'])
-        && data.keys().hasOnly(['id', 'articleCode', 'quantiteDemandee', 'quantiteProduite', 'statut', 'createdBy', 'updatedAt'])
+        && data.keys().hasOnly(['id', 'articleCode', 'quantiteDemandee', 'quantiteProduite', 'statut', 'datePlanifiee', 'ligneProductionId', 'createdBy', 'updatedAt'])
         && data.id is string && data.id.size() > 0 && data.id.size() <= 64
         && data.articleCode is string && data.articleCode.size() > 0 && data.articleCode.size() <= 64
         && data.quantiteDemandee is number && data.quantiteDemandee > 0
-        && data.statut in ['Planifie', 'EnMelange', 'EnConditionnement', 'Termine', 'Annule']
-        && data.createdBy is string && data.createdBy == request.auth.uid;
+        && data.statut in ['Planifie', 'EnPreparation', 'EnMelange', 'EnConditionnement', 'ControleQualite', 'Termine', 'Annule', 'Interrompu']
+        && (!('datePlanifiee' in data) || (data.datePlanifiee is string && data.datePlanifiee.size() <= 64))
+        && (!('ligneProductionId' in data) || data.ligneProductionId is number)
+        && data.createdBy is string;
     }
 
     function isValidMouvement(data) {
@@ -40,6 +42,18 @@ service cloud.firestore {
         && data.type in ['ENTREE_RECEPTION', 'SORTIE_PRODUCTION', 'ENTREE_PRODUCTION', 'AJUSTEMENT_INVENTAIRE']
         && data.quantite is number
         && data.createdBy is string && data.createdBy == request.auth.uid;
+    }
+
+    function isValidIntervention(data) {
+      return data.keys().hasAll(['id', 'date', 'machineId', 'machineNom', 'technicien', 'descriptionPanne', 'createdBy'])
+        && data.keys().hasOnly(['id', 'date', 'machineId', 'machineNom', 'technicien', 'descriptionPanne', 'typeIntervention', 'dureeMinutes', 'statutMachineApres', 'piecesRemplacees', 'createdBy'])
+        && data.id is string && data.id.size() > 0 && data.id.size() <= 64
+        && data.date is string && data.date.size() > 0 && data.date.size() <= 64
+        && data.machineId is number
+        && data.machineNom is string && data.machineNom.size() > 0 && data.machineNom.size() <= 128
+        && data.technicien is string && data.technicien.size() > 0 && data.technicien.size() <= 128
+        && data.descriptionPanne is string && data.descriptionPanne.size() > 0 && data.descriptionPanne.size() <= 4000
+        && data.createdBy is string;
     }
 
     // Health check doc
@@ -72,6 +86,15 @@ service cloud.firestore {
       allow get, list: if isSignedIn();
       allow create: if isSignedIn() && isValidId(mouvementId) && isValidMouvement(request.resource.data);
       allow update, delete: if false;
+    }
+
+    // Maintenance Interventions
+    match /interventions_maintenance/{interventionId} {
+      allow get, list: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(interventionId) && isValidIntervention(request.resource.data);
+      allow update: if isSignedIn() && isValidId(interventionId) && isValidIntervention(request.resource.data)
+        && request.resource.data.id == resource.data.id;
+      allow delete: if isSignedIn();
     }
   }
 }

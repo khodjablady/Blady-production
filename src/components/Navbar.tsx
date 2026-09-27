@@ -14,13 +14,15 @@ import {
   Database,
   LogIn,
   LogOut,
-  User
+  User,
+  Wrench,
+  CalendarRange
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 interface NavbarProps {
-  activeTab: 'synoptic' | 'erp' | 'mes' | 'analytics' | 'connectivity' | 'csharp';
-  setActiveTab: (tab: 'synoptic' | 'erp' | 'mes' | 'analytics' | 'connectivity' | 'csharp') => void;
+  activeTab: 'synoptic' | 'erp' | 'mes' | 'planning' | 'analytics' | 'connectivity' | 'csharp' | 'maintenance';
+  setActiveTab: (tab: 'synoptic' | 'erp' | 'mes' | 'planning' | 'analytics' | 'connectivity' | 'csharp' | 'maintenance') => void;
   isSimulating: boolean;
   setIsSimulating: (val: boolean) => void;
   onResetData: () => void;
@@ -107,6 +109,19 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
 
             <button
+              id="nav-tab-planning"
+              onClick={() => setActiveTab('planning')}
+              className={`flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                activeTab === 'planning'
+                  ? 'bg-indigo-600 text-white shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+              }`}
+            >
+              <CalendarRange className="w-4 h-4 text-indigo-400" />
+              <span>Planning Gantt</span>
+            </button>
+
+            <button
               id="nav-tab-analytics"
               onClick={() => setActiveTab('analytics')}
               className={`flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
@@ -117,6 +132,19 @@ export const Navbar: React.FC<NavbarProps> = ({
             >
               <BarChart3 className="w-4 h-4 text-emerald-400" />
               <span>Analytique & OEE</span>
+            </button>
+
+            <button
+              id="nav-tab-maintenance"
+              onClick={() => setActiveTab('maintenance')}
+              className={`flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                activeTab === 'maintenance'
+                  ? 'bg-sky-600 text-white shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+              }`}
+            >
+              <Wrench className="w-4 h-4 text-amber-400" />
+              <span>Journal Maintenance</span>
             </button>
 
             <button
@@ -177,11 +205,13 @@ export const Navbar: React.FC<NavbarProps> = ({
                   </div>
                 </div>
                 <button
+                  id="btn-navbar-logout"
                   onClick={logout}
-                  className="text-slate-400 hover:text-rose-400 p-0.5 transition-colors"
-                  title="Déconnexion"
+                  className="flex items-center space-x-1 text-slate-400 hover:text-rose-400 p-1 rounded-md hover:bg-slate-900 border border-transparent hover:border-rose-900/40 transition-colors ml-1"
+                  title="Se déconnecter et retourner à l'écran de connexion"
                 >
                   <LogOut className="w-3.5 h-3.5" />
+                  <span className="text-[10px] hidden md:inline font-medium">Déconnexion</span>
                 </button>
               </div>
             ) : (
@@ -255,10 +285,22 @@ export const Navbar: React.FC<NavbarProps> = ({
           MES & TRS
         </button>
         <button
+          onClick={() => setActiveTab('planning')}
+          className={`px-3 py-1 rounded whitespace-nowrap ${activeTab === 'planning' ? 'bg-indigo-600 text-white' : 'text-indigo-300'}`}
+        >
+          Planning
+        </button>
+        <button
           onClick={() => setActiveTab('analytics')}
           className={`px-3 py-1 rounded whitespace-nowrap ${activeTab === 'analytics' ? 'bg-sky-600 text-white' : 'text-emerald-400'}`}
         >
           Analytique & OEE
+        </button>
+        <button
+          onClick={() => setActiveTab('maintenance')}
+          className={`px-3 py-1 rounded whitespace-nowrap ${activeTab === 'maintenance' ? 'bg-sky-600 text-white' : 'text-amber-400'}`}
+        >
+          Maintenance
         </button>
         <button
           onClick={() => setActiveTab('connectivity')}
