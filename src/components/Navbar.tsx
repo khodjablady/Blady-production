@@ -16,17 +16,21 @@ import {
   LogOut,
   User,
   Wrench,
-  CalendarRange
+  CalendarRange,
+  ExternalLink,
+  FileText,
+  FlaskConical
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 interface NavbarProps {
-  activeTab: 'synoptic' | 'erp' | 'mes' | 'planning' | 'analytics' | 'connectivity' | 'csharp' | 'maintenance';
-  setActiveTab: (tab: 'synoptic' | 'erp' | 'mes' | 'planning' | 'analytics' | 'connectivity' | 'csharp' | 'maintenance') => void;
+  activeTab: 'synoptic' | 'erp' | 'mes' | 'planning' | 'quality' | 'analytics' | 'connectivity' | 'csharp' | 'maintenance';
+  setActiveTab: (tab: 'synoptic' | 'erp' | 'mes' | 'planning' | 'quality' | 'analytics' | 'connectivity' | 'csharp' | 'maintenance') => void;
   isSimulating: boolean;
   setIsSimulating: (val: boolean) => void;
   onResetData: () => void;
   criticalAlertCount: number;
+  qualityAlertCount?: number;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -35,7 +39,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   isSimulating,
   setIsSimulating,
   onResetData,
-  criticalAlertCount
+  criticalAlertCount,
+  qualityAlertCount = 0
 }) => {
   const { user, profile, dbConnected, loginWithGoogle, logout } = useAuth();
   return (
@@ -122,6 +127,24 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
 
             <button
+              id="nav-tab-quality"
+              onClick={() => setActiveTab('quality')}
+              className={`flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                activeTab === 'quality'
+                  ? 'bg-emerald-600 text-white shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+              }`}
+            >
+              <FlaskConical className="w-4 h-4 text-emerald-400" />
+              <span>Contrôle Qualité</span>
+              {qualityAlertCount > 0 && (
+                <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-rose-500/30 text-rose-300 font-bold border border-rose-500/50 animate-pulse">
+                  {qualityAlertCount}
+                </span>
+              )}
+            </button>
+
+            <button
               id="nav-tab-analytics"
               onClick={() => setActiveTab('analytics')}
               className={`flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
@@ -176,6 +199,19 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {/* Quick controls, database status & auth */}
           <div className="flex items-center space-x-2.5">
+            {/* Démo HTML Autonome Link */}
+            <a
+              href="/monusine-standalone.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hidden lg:flex items-center space-x-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-950/70 border border-emerald-700/60 text-emerald-300 hover:text-white hover:bg-emerald-900 transition-colors shadow-sm"
+              title="Consulter ou télécharger la maquette HTML statique et autonome"
+            >
+              <FileText className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Démo HTML</span>
+              <ExternalLink className="w-3 h-3 opacity-70" />
+            </a>
+
             {/* Database indicator */}
             <div 
               className="hidden md:flex items-center space-x-1 px-2.5 py-1 rounded-lg text-xs bg-slate-950/80 border border-slate-800 text-slate-300"
@@ -289,6 +325,12 @@ export const Navbar: React.FC<NavbarProps> = ({
           className={`px-3 py-1 rounded whitespace-nowrap ${activeTab === 'planning' ? 'bg-indigo-600 text-white' : 'text-indigo-300'}`}
         >
           Planning
+        </button>
+        <button
+          onClick={() => setActiveTab('quality')}
+          className={`px-3 py-1 rounded whitespace-nowrap ${activeTab === 'quality' ? 'bg-emerald-600 text-white' : 'text-emerald-400'}`}
+        >
+          Qualité {qualityAlertCount > 0 ? `(${qualityAlertCount} alertes)` : ''}
         </button>
         <button
           onClick={() => setActiveTab('analytics')}

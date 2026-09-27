@@ -164,6 +164,77 @@
         }
       },
       "required": ["id", "date", "machineId", "machineNom", "technicien", "descriptionPanne", "createdBy"]
+    },
+    "ControleQualiteDoc": {
+      "title": "ControleQualiteDoc",
+      "description": "Quality control inspection record per manufacturing lot",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Inspection record ID"
+        },
+        "numeroLot": {
+          "type": "string",
+          "description": "Target batch number"
+        },
+        "numeroOF": {
+          "type": "string",
+          "description": "Related OF number"
+        },
+        "articleCode": {
+          "type": "string",
+          "description": "Article SKU"
+        },
+        "articleDesignation": {
+          "type": "string",
+          "description": "Article designation"
+        },
+        "inspecteur": {
+          "type": "string",
+          "description": "Inspector name"
+        },
+        "phaseControle": {
+          "type": "string",
+          "enum": ["CuveMelange", "EnCoursFabrication", "FinConditionnement", "LiberationLot"],
+          "description": "Control phase"
+        },
+        "decision": {
+          "type": "string",
+          "enum": ["Conforme", "NonConforme", "EnQuarantaine", "Derogation"],
+          "description": "Quality verdict"
+        },
+        "conforme": {
+          "type": "boolean",
+          "description": "Overall compliance flag"
+        },
+        "alertesCount": {
+          "type": "number",
+          "description": "Number of warning parameters"
+        },
+        "critiquesCount": {
+          "type": "number",
+          "description": "Number of critical out of tolerance parameters"
+        },
+        "dateControle": {
+          "type": "string",
+          "description": "Inspection timestamp"
+        },
+        "aspectVisuel": {
+          "type": "string",
+          "enum": ["Conforme", "ParticulesDetectees", "TurbiditeAnormale", "CouleurNonConforme"],
+          "description": "Visual appearance"
+        },
+        "remarques": {
+          "type": "string",
+          "description": "Inspector notes"
+        },
+        "createdBy": {
+          "type": "string",
+          "description": "Author UID"
+        }
+      },
+      "required": ["id", "numeroLot", "articleCode", "inspecteur", "decision", "dateControle", "createdBy"]
     }
   },
   "firestore": {
@@ -182,6 +253,10 @@
     "/interventions_maintenance/{interventionId}": {
       "schema": "InterventionMaintenanceDoc",
       "description": "Audit log of machine maintenance and repairs"
+    },
+    "/controles_qualite/{qcId}": {
+      "schema": "ControleQualiteDoc",
+      "description": "Quality control inspection records and batch analytical releases"
     }
   }
 }

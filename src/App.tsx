@@ -8,6 +8,7 @@ import { IndustrialConnectivityView } from './components/IndustrialConnectivityV
 import { CSharpArchitectureViewer } from './components/CSharpArchitectureViewer';
 import { JournalMaintenance } from './components/JournalMaintenance';
 import { PlanningGanttView } from './components/PlanningGanttView';
+import { QualityControlView } from './components/QualityControlView';
 import { ProductionDeclarationModal } from './components/ProductionDeclarationModal';
 import { ReceiptModal } from './components/ReceiptModal';
 import { NewOfModal } from './components/NewOfModal';
@@ -23,8 +24,9 @@ import {
   INITIAL_OEE,
   INITIAL_INTERVENTIONS
 } from './data/initialData';
+import { INITIAL_CONTROLES_QUALITE } from './data/qualitySpecs';
 import { MrpStockEngine } from './services/mrpService';
-import { Article, Nomenclature, CommandeClient, SuggestionAchat, BonReception, MouvementStock, OrdreFabrication, MachineLigne, OeeMetrics, InterventionMaintenance } from './types';
+import { Article, Nomenclature, CommandeClient, SuggestionAchat, BonReception, MouvementStock, OrdreFabrication, MachineLigne, OeeMetrics, InterventionMaintenance, ControleQualiteLot } from './types';
 import { CheckCircle2, AlertTriangle, Info, X, Factory } from 'lucide-react';
 import { useAuth } from './context/AuthContext';
 import { AuthScreen } from './components/AuthScreen';
@@ -35,14 +37,17 @@ import {
   persistMouvementStock,
   subscribeToInterventionsMaintenance,
   persistInterventionMaintenance,
-  deleteInterventionMaintenance
+  deleteInterventionMaintenance,
+  subscribeToControlesQualite,
+  persistControleQualite,
+  deleteControleQualite
 } from './services/firestoreService';
 
 export default function App() {
   const { user, profile, loading } = useAuth();
 
   // Navigation
-  const [activeTab, setActiveTab] = useState<'synoptic' | 'erp' | 'mes' | 'planning' | 'analytics' | 'connectivity' | 'csharp' | 'maintenance'>('synoptic');
+  const [activeTab, setActiveTab] = useState<'synoptic' | 'erp' | 'mes' | 'planning' | 'quality' | 'analytics' | 'connectivity' | 'csharp' | 'maintenance'>('synoptic');
   
   // Data state
   const [articles, setArticles] = useState<Article[]>(INITIAL_ARTICLES);
@@ -55,6 +60,7 @@ export default function App() {
   const [machines, setMachines] = useState<MachineLigne[]>(INITIAL_MACHINES);
   const [oee, setOee] = useState<OeeMetrics>(INITIAL_OEE);
   const [interventions, setInterventions] = useState<InterventionMaintenance[]>(INITIAL_INTERVENTIONS);
+  const [controlesQualite, setControlesQualite] = useState<ControleQualiteLot[]>(INITIAL_CONTROLES_QUALITE);
 
   // Simulation & Modal state
   const [isSimulating, setIsSimulating] = useState<boolean>(true);
@@ -82,6 +88,7 @@ export default function App() {
 
   // Critical alerts count
   const criticalStockCount = articles.filter(a => a.estComposant && a.stockTheorique < a.seuilCritique).length;
+  const qualityAlertCount = controlesQualite.filter(c => c.decision === 'EnQuarantaine' || c.decision === 'NonConforme').length;
 
   // Real-time synchronization with Firestore (Database and Auth)
   useEffect(() => {
@@ -103,10 +110,17 @@ export default function App() {
       }
     });
 
+    const unsubQc = subscribeToControlesQualite((cloudQcs) => {
+      if (cloudQcs && cloudQcs.length > 0) {
+        setControlesQualite(cloudQcs);
+      }
+    });
+
     return () => {
       unsubOfs();
       unsubMvts();
       unsubMaint();
+      unsubQc();
     };
   }, []);
 
@@ -471,6 +485,39 @@ export default function App() {
     showNotification(`Intervention ${interventionId} retirée du journal.`, 'info');
   };
 
+  // 9b. Quality Control handlers
+  const handleSaveControleQualite = (qc: ControleQualiteLot) => {
+    setControlesQualite(prev => {
+      const idx = prev.findIndex(item => item.id === qc.id);
+      if (idx >= 0) {
+        const copy = [...prev];
+        copy[idx] = qc;
+        return copy;
+      }
+      return [qc, ...prev];
+    });
+
+    persistControleQualite(qc, user?.uid);
+
+    if (qc.decision === 'EnQuarantaine' || qc.decision === 'NonConforme') {
+      showNotification(
+        `ALERTE QUALITÉ CRITIQUE : Le lot ${qc.numeroLot} a été placé EN QUARANTAINE pour non-conformité analytique.`,
+        'warning'
+      );
+    } else {
+      showNotification(
+        `Contrôle qualité enregistré : Lot ${qc.numeroLot} validé ${qc.decision} (${qc.articleDesignation}).`,
+        'success'
+      );
+    }
+  };
+
+  const handleDeleteControleQualite = (id: string) => {
+    setControlesQualite(prev => prev.filter(c => c.id !== id));
+    deleteControleQualite(id);
+    showNotification('Contrôle qualité retiré du registre.', 'info');
+  };
+
   // 10. Reset data
   const handleResetData = () => {
     setArticles(INITIAL_ARTICLES);
@@ -482,6 +529,7 @@ export default function App() {
     setMachines(INITIAL_MACHINES);
     setOee(INITIAL_OEE);
     setInterventions(INITIAL_INTERVENTIONS);
+    setControlesQualite(INITIAL_CONTROLES_QUALITE);
     showNotification("Données d'usine réinitialisées aux valeurs nominales du projet C#.", 'info');
   };
 
@@ -516,6 +564,7 @@ export default function App() {
         setIsSimulating={setIsSimulating}
         onResetData={handleResetData}
         criticalAlertCount={criticalStockCount}
+        qualityAlertCount={qualityAlertCount}
       />
 
       {/* Main Content Area */}
@@ -554,6 +603,7 @@ export default function App() {
             onGoToAnalytics={() => setActiveTab('analytics')}
             onGoToMaintenance={() => setActiveTab('maintenance')}
             onGoToPlanning={() => setActiveTab('planning')}
+            onGoToQuality={() => setActiveTab('quality')}
           />
         )}
 
@@ -594,6 +644,16 @@ export default function App() {
             onChangerStatutOf={handleChangerStatutOf}
             onCreerOf={() => setIsNewOfModalOpen(true)}
             onOpenDeclareModal={handleOpenDeclareModal}
+          />
+        )}
+
+        {activeTab === 'quality' && (
+          <QualityControlView
+            controles={controlesQualite}
+            articles={articles}
+            ordresFabrication={ordresFabrication}
+            onSaveControle={handleSaveControleQualite}
+            onDeleteControle={handleDeleteControleQualite}
           />
         )}
 

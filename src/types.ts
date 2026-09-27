@@ -253,3 +253,49 @@ export interface InterventionMaintenance {
   createdBy?: string;
   createdAt?: string;
 }
+
+// ==========================================
+// QUALITY CONTROL (CONTRÔLE QUALITÉ & LOTS)
+// ==========================================
+export type DecisionQualite = 'Conforme' | 'NonConforme' | 'EnQuarantaine' | 'Derogation';
+export type PhaseControleQualite = 'CuveMelange' | 'EnCoursFabrication' | 'FinConditionnement' | 'LiberationLot';
+export type StatutParametre = 'Conforme' | 'Alerte' | 'Critique';
+export type AspectVisuelType = 'Conforme' | 'ParticulesDetectees' | 'TurbiditeAnormale' | 'CouleurNonConforme';
+
+export interface ParametreControle {
+  id: string;
+  code: 'PH' | 'VISCOSITE' | 'DENSITE' | 'ALCOOL' | 'TEMPERATURE' | 'MATIERE_ACTIVE';
+  nom: string;
+  unite: string;
+  valeurCible: number;
+  toleranceMin: number;
+  toleranceMax: number;
+  valeurMesuree: number;
+  statut: StatutParametre;
+  ecartPourcentage: number;
+  commentaire?: string;
+}
+
+export interface ControleQualiteLot {
+  id: string;
+  numeroLot: string;
+  ordreFabricationId?: number;
+  numeroOF?: string;
+  articleId: number;
+  articleDesignation: string;
+  articleCode: string;
+  dateControle: string; // ISO string
+  inspecteur: string;
+  phaseControle: PhaseControleQualite;
+  parametres: ParametreControle[];
+  aspectVisuel: AspectVisuelType;
+  decision: DecisionQualite;
+  remarques?: string;
+  conforme: boolean;
+  alertesCount: number;
+  critiquesCount: number;
+  certificatConformiteGenere?: boolean;
+  createdBy?: string;
+  createdAt?: string;
+}
+

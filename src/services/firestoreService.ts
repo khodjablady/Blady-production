@@ -9,12 +9,14 @@ import {
   orderBy
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { OrdreFabrication, MouvementStock, InterventionMaintenance } from '../types';
+import { OrdreFabrication, MouvementStock, InterventionMaintenance, ControleQualiteLot } from '../types';
 import { INITIAL_ORDRES_FABRICATION, INITIAL_MOUVEMENTS_STOCK, INITIAL_INTERVENTIONS } from '../data/initialData';
+import { INITIAL_CONTROLES_QUALITE } from '../data/qualitySpecs';
 
 const OF_COLLECTION = 'ordres_fabrication';
 const MVT_COLLECTION = 'mouvements_stock';
 const INTERVENTION_COLLECTION = 'interventions_maintenance';
+const QC_COLLECTION = 'controles_qualite';
 
 export function subscribeToOrdresFabrication(
   callback: (ofs: OrdreFabrication[]) => void
@@ -242,3 +244,117 @@ export async function deleteInterventionMaintenance(
     console.warn('[Firestore] Could not delete maintenance intervention:', err);
   }
 }
+
+// ==========================================
+// CONTROLES QUALITE (QUALITY CONTROL)
+// ==========================================
+export function subscribeToControlesQualite(
+  callback: (qcs: ControleQualiteLot[]) => void
+): () => void {
+  const colRef = collection(db, QC_COLLECTION);
+  const q = query(colRef, limit(50));
+
+  return onSnapshot(q, (snapshot) => {
+    if (snapshot.empty) {
+      INITIAL_CONTROLES_QUALITE.forEach(async (item) => {
+        try {
+          await setDoc(doc(db, QC_COLLECTION, item.id), {
+            id: item.id,
+            numeroLot: item.numeroLot,
+            numeroOF: item.numeroOF || '',
+            articleCode: item.articleCode,
+            articleDesignation: item.articleDesignation,
+            inspecteur: item.inspecteur,
+            phaseControle: item.phaseControle,
+            decision: item.decision,
+            conforme: item.conforme,
+            alertesCount: item.alertesCount,
+            critiquesCount: item.critiquesCount,
+            dateControle: item.dateControle,
+            remarques: item.remarques || '',
+            aspectVisuel: item.aspectVisuel,
+            parametres: item.parametres,
+            createdBy: 'system'
+          });
+        } catch {
+          // Ignore seeding errors
+        }
+      });
+      callback(INITIAL_CONTROLES_QUALITE);
+      return;
+    }
+
+    const items: ControleQualiteLot[] = [];
+    snapshot.forEach((d) => {
+      const data = d.data();
+      items.push({
+        id: data.id || d.id,
+        numeroLot: data.numeroLot || 'LOT-INCONNU',
+        ordreFabricationId: data.ordreFabricationId,
+        numeroOF: data.numeroOF,
+        articleId: data.articleId || 1,
+        articleDesignation: data.articleDesignation || 'Produit standard',
+        articleCode: data.articleCode || 'PF-001',
+        dateControle: data.dateControle || new Date().toISOString(),
+        inspecteur: data.inspecteur || 'Responsable Qualité',
+        phaseControle: data.phaseControle || 'FinConditionnement',
+        parametres: data.parametres || [],
+        aspectVisuel: data.aspectVisuel || 'Conforme',
+        decision: data.decision || 'Conforme',
+        remarques: data.remarques || '',
+        conforme: data.conforme !== undefined ? data.conforme : true,
+        alertesCount: data.alertesCount || 0,
+        critiquesCount: data.critiquesCount || 0,
+        certificatConformiteGenere: data.certificatConformiteGenere || false,
+        createdBy: data.createdBy,
+        createdAt: data.createdAt || data.dateControle
+      });
+    });
+
+    // Sort by date descending
+    items.sort((a, b) => new Date(b.dateControle).getTime() - new Date(a.dateControle).getTime());
+    callback(items);
+  }, (err) => {
+    console.warn('[Firestore] Error subscribing to quality controls, using local state:', err);
+    callback(INITIAL_CONTROLES_QUALITE);
+  });
+}
+
+export async function persistControleQualite(
+  qc: ControleQualiteLot,
+  userUid: string = 'system'
+): Promise<void> {
+  try {
+    await setDoc(doc(db, QC_COLLECTION, qc.id), {
+      id: qc.id,
+      numeroLot: qc.numeroLot,
+      numeroOF: qc.numeroOF || '',
+      articleCode: qc.articleCode,
+      articleDesignation: qc.articleDesignation,
+      inspecteur: qc.inspecteur,
+      phaseControle: qc.phaseControle,
+      decision: qc.decision,
+      conforme: qc.conforme,
+      alertesCount: qc.alertesCount,
+      critiquesCount: qc.critiquesCount,
+      dateControle: qc.dateControle,
+      remarques: qc.remarques || '',
+      aspectVisuel: qc.aspectVisuel,
+      parametres: qc.parametres,
+      createdBy: userUid
+    });
+  } catch (err) {
+    console.warn('[Firestore] Could not persist quality control:', err);
+  }
+}
+
+export async function deleteControleQualite(
+  qcId: string
+): Promise<void> {
+  try {
+    await deleteDoc(doc(db, QC_COLLECTION, qcId));
+  } catch (err) {
+    console.warn('[Firestore] Could not delete quality control:', err);
+  }
+}
+

@@ -14,7 +14,8 @@ import {
   PackageCheck,
   BarChart3,
   Wrench,
-  CalendarRange
+  CalendarRange,
+  FlaskConical
 } from 'lucide-react';
 import { Article, OrdreFabrication, MachineLigne, OeeMetrics } from '../types';
 import { ProductionPerformance } from './ProductionPerformance';
@@ -36,6 +37,7 @@ interface SynopticOverviewProps {
   onGoToAnalytics?: () => void;
   onGoToMaintenance?: () => void;
   onGoToPlanning?: () => void;
+  onGoToQuality?: () => void;
   onUpdateOee?: (updated: Partial<OeeMetrics>) => void;
   thresholds?: OeeThresholds;
 }
@@ -52,6 +54,7 @@ export const SynopticOverview: React.FC<SynopticOverviewProps> = ({
   onGoToAnalytics,
   onGoToMaintenance,
   onGoToPlanning,
+  onGoToQuality,
   onUpdateOee,
   thresholds = INDUSTRIAL_OEE_THRESHOLDS
 }) => {
@@ -156,6 +159,16 @@ export const SynopticOverview: React.FC<SynopticOverviewProps> = ({
               >
                 <CalendarRange className="w-4 h-4 text-indigo-400" />
                 <span>Planning Gantt</span>
+              </button>
+            )}
+            {onGoToQuality && (
+              <button
+                id="btn-quick-quality"
+                onClick={onGoToQuality}
+                className="flex items-center space-x-2 px-3 py-2 rounded-xl text-xs font-semibold bg-emerald-950/80 hover:bg-emerald-900/90 text-emerald-300 border border-emerald-600/40 transition-colors"
+              >
+                <FlaskConical className="w-4 h-4 text-emerald-400" />
+                <span>Contrôle Qualité</span>
               </button>
             )}
             {onGoToMaintenance && (

@@ -86,6 +86,17 @@ export const CSharpArchitectureViewer: React.FC = () => {
           </div>
 
           <div className="flex items-center space-x-2">
+            <a
+              href="/monusine-standalone.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center space-x-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm transition-all"
+              title="Ouvrir la démo HTML5 statique et autonome"
+            >
+              <ExternalLink className="w-4 h-4" />
+              <span>Démo HTML Autonome</span>
+            </a>
+
             <button
               onClick={handleDownloadFile}
               className="flex items-center space-x-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow-sm transition-colors"

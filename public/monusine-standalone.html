@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="fr" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MonUsine ERP/MES • Architecture C# .NET 8/9 (Démo HTML Autonome)</title>
+  <meta name="description" content="Démo HTML statique et autonome du logiciel industriel complet ERP + MES + SCADA en architecture Monolithe Modulaire C# (.NET 8/9).">
+  <!-- Tailwind CSS CDN pour un rendu parfait sans compilation préalable -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            slate: {
+              850: '#151f32',
+              900: '#0f172a',
+              950: '#020617',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Styles spécifiques pour le fichier autonome */
+    body {
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: #020617;
+      color: #f8fafc;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 3px;
+    }
+    .pulse-dot {
+      animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(1.1); }
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col bg-slate-950 text-slate-100 antialiased selection:bg-indigo-500 selection:text-white">
+
+  <!-- TOP HEADER / BANNER -->
+  <header class="sticky top-0 z-50 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 shadow-lg">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        
+        <!-- Logo & Titre Usine -->
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-sky-500 to-emerald-400 p-0.5 shadow-md">
+            <div class="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center">
+              <svg class="w-5 h-5 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+              </svg>
+            </div>
+          </div>
+          <div>
+            <div class="flex items-center space-x-2">
+              <span class="font-black text-base tracking-tight text-white">MonUsine <span class="text-indigo-400">ERP / MES</span></span>
+              <span class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-indigo-950 text-indigo-300 border border-indigo-700/60 font-mono">
+                C# .NET 8/9
+              </span>
+              <span class="hidden sm:inline-block px-2 py-0.5 text-[10px] font-semibold rounded-full bg-emerald-950 text-emerald-300 border border-emerald-800/80">
+                ● 100% HTML Autonome
+              </span>
+            </div>
+            <p class="text-[11px] text-slate-400 font-mono">Usine Chimique & Conditionnement Cosmétique • BladyProduction</p>
+          </div>
+        </div>
+
+        <!-- Action boutons : Téléchargement du fichier & Statut -->
+        <div class="flex items-center space-x-2.5">
+          <button onclick="window.print()" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center space-x-1.5 transition-colors">
+            <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+            </svg>
+            <span>Imprimer / PDF</span>
+          </button>
+          
+          <button onclick="downloadSelfHtml()" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow-md shadow-indigo-950 flex items-center space-x-1.5 transition-all">
+            <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            <span>Sauvegarder HTML</span>
+          </button>
+        </div>
+
+      </div>
+
+      <!-- Navigation Tabs Principaux -->
+      <nav class="flex space-x-1 overflow-x-auto py-2 border-t border-slate-800/80 custom-scrollbar text-xs">
+        <button onclick="switchTab('synoptic')" id="tab-btn-synoptic" class="tab-btn px-3.5 py-1.5 rounded-lg font-medium whitespace-nowrap bg-indigo-600 text-white shadow-sm flex items-center space-x-1.5">
+          <svg class="w-4 h-4 text-indigo-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
+          <span>Synoptique Usine</span>
+        </button>
+
+        <button onclick="switchTab('gantt')" id="tab-btn-gantt" class="tab-btn px-3.5 py-1.5 rounded-lg font-medium whitespace-nowrap text-slate-400 hover:text-slate-200 hover:bg-slate-800 flex items-center space-x-1.5">
+          <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+          <span>Planning Gantt</span>
+        </button>
+
+        <button onclick="switchTab('mes')" id="tab-btn-mes" class="tab-btn px-3.5 py-1.5 rounded-lg font-medium whitespace-nowrap text-slate-400 hover:text-slate-200 hover:bg-slate-800 flex items-center space-x-1.5">
+          <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+          <span>MES & TRS Atelier</span>
+        </button>
+
+        <button onclick="switchTab('erp')" id="tab-btn-erp" class="tab-btn px-3.5 py-1.5 rounded-lg font-medium whitespace-nowrap text-slate-400 hover:text-slate-200 hover:bg-slate-800 flex items-center space-x-1.5">
+          <svg class="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
+          <span>ERP & Stocks</span>
+        </button>
+
+        <button onclick="switchTab('predictions')" id="tab-btn-predictions" class="tab-btn px-3.5 py-1.5 rounded-lg font-medium whitespace-nowrap text-slate-400 hover:text-slate-200 hover:bg-slate-800 flex items-center space-x-1.5">
+          <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
+          <span>Prédictions J+3</span>
+        </button>
+
+        <button onclick="switchTab('csharp')" id="tab-btn-csharp" class="tab-btn px-3.5 py-1.5 rounded-lg font-medium whitespace-nowrap text-slate-400 hover:text-slate-200 hover:bg-slate-800 flex items-center space-x-1.5">
+          <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
+          <span>Code C# .NET 8/9</span>
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+    <!-- ========================================== -->
+    <!-- TAB 1 : SYNOPTIQUE USINE                   -->
+    <!-- ========================================== -->
+    <section id="view-synoptic" class="tab-content space-y-6">
+      
+      <!-- Bannière KPI Synoptique -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-sm">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div>
+            <div class="flex items-center space-x-3">
+              <h1 class="text-xl sm:text-2xl font-bold text-white tracking-tight">Synoptique Industriel SCADA & TRS</h1>
+              <span class="px-2.5 py-0.5 text-xs font-bold rounded-full bg-emerald-950 text-emerald-400 border border-emerald-800 flex items-center space-x-1">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 pulse-dot"></span>
+                <span>Automates en ligne (OPC UA)</span>
+              </span>
+            </div>
+            <p class="text-sm text-slate-400 mt-1">Supervision temps réel des 3 réacteurs de formulation, des cuves de stockage et de la ligne de conditionnement.</p>
+          </div>
+
+          <div class="flex items-center space-x-3">
+            <div class="bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-right">
+              <div class="text-[10px] uppercase font-mono text-slate-500">Cadence Instantanée</div>
+              <div class="text-xl font-bold font-mono text-emerald-400">980 <span class="text-xs text-slate-400">U/h</span></div>
+            </div>
+            <div class="bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-right">
+              <div class="text-[10px] uppercase font-mono text-slate-500">TRS Global Atelier</div>
+              <div class="text-xl font-bold font-mono text-sky-400">84.7 <span class="text-xs text-slate-400">%</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4 Jauges TRS Piliers ISA-95 -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 pt-5 border-t border-slate-800">
+          
+          <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-4 flex items-center space-x-4">
+            <div class="relative w-14 h-14 flex items-center justify-center shrink-0">
+              <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                <path class="text-slate-800" stroke-width="3.5" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                <path class="text-sky-400" stroke-width="3.5" stroke-dasharray="84.7, 100" stroke-linecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+              </svg>
+              <span class="absolute font-mono font-bold text-xs text-white">85%</span>
+            </div>
+            <div>
+              <div class="text-xs text-slate-400 font-medium">TRS Global</div>
+              <div class="text-lg font-bold text-white font-mono">84.7 %</div>
+              <div class="text-[10px] text-emerald-400">Cible : 85.0%</div>
+            </div>
+          </div>
+
+          <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-4 flex items-center space-x-4">
+            <div class="relative w-14 h-14 flex items-center justify-center shrink-0">
+              <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                <path class="text-slate-800" stroke-width="3.5" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                <path class="text-indigo-400" stroke-width="3.5" stroke-dasharray="92.5, 100" stroke-linecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+              </svg>
+              <span class="absolute font-mono font-bold text-xs text-white">93%</span>
+            </div>
+            <div>
+              <div class="text-xs text-slate-400 font-medium">Disponibilité (D)</div>
+              <div class="text-lg font-bold text-white font-mono">92.5 %</div>
+              <div class="text-[10px] text-slate-400">Arrêts : 36 min</div>
+            </div>
+          </div>
+
+          <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-4 flex items-center space-x-4">
+            <div class="relative w-14 h-14 flex items-center justify-center shrink-0">
+              <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                <path class="text-slate-800" stroke-width="3.5" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                <path class="text-amber-400" stroke-width="3.5" stroke-dasharray="94.0, 100" stroke-linecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+              </svg>
+              <span class="absolute font-mono font-bold text-xs text-white">94%</span>
+            </div>
+            <div>
+              <div class="text-xs text-slate-400 font-medium">Performance (P)</div>
+              <div class="text-lg font-bold text-white font-mono">94.0 %</div>
+              <div class="text-[10px] text-amber-400">980 / 1000 U/h</div>
+            </div>
+          </div>
+
+          <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-4 flex items-center space-x-4">
+            <div class="relative w-14 h-14 flex items-center justify-center shrink-0">
+              <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                <path class="text-slate-800" stroke-width="3.5" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                <path class="text-emerald-400" stroke-width="3.5" stroke-dasharray="97.5, 100" stroke-linecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+              </svg>
+              <span class="absolute font-mono font-bold text-xs text-white">98%</span>
+            </div>
+            <div>
+              <div class="text-xs text-slate-400 font-medium">Qualité (Q)</div>
+              <div class="text-lg font-bold text-white font-mono">97.5 %</div>
+              <div class="text-[10px] text-emerald-400">Rebuts : 2.5%</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Schéma Synoptique du Processus Industriel -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-sm space-y-6">
+        <h2 class="text-base font-bold text-white flex items-center space-x-2">
+          <span>Lignes de Fabrication & Réacteurs Chimiques</span>
+          <span class="text-xs font-normal text-slate-400">(Flux séquentiel matières)</span>
+        </h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          
+          <!-- Cuve 1 : Alcool 96° -->
+          <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 flex flex-col justify-between">
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-white text-sm">Cuve R-101 • Alcool 96°</span>
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+            </div>
+            <div class="my-4 text-center">
+              <div class="text-3xl font-black font-mono text-sky-400">14 200 L</div>
+              <div class="text-xs text-slate-400">Niveau : 71% (Capacité 20 000L)</div>
+              <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden mt-2">
+                <div class="bg-sky-500 h-full rounded-full" style="width: 71%"></div>
+              </div>
+            </div>
+            <div class="text-[11px] text-slate-500 flex justify-between">
+              <span>Pression : 1.02 bar</span>
+              <span>Temp : 19.4 °C</span>
+            </div>
+          </div>
+
+          <!-- Cuve 2 : Savon Végétal -->
+          <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 flex flex-col justify-between">
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-white text-sm">Cuve R-102 • Savon Huile Coco</span>
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+            </div>
+            <div class="my-4 text-center">
+              <div class="text-3xl font-black font-mono text-amber-400">4 850 L</div>
+              <div class="text-xs text-slate-400">Niveau : 48% (Capacité 10 000L)</div>
+              <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden mt-2">
+                <div class="bg-amber-500 h-full rounded-full" style="width: 48%"></div>
+              </div>
+            </div>
+            <div class="text-[11px] text-slate-500 flex justify-between">
+              <span>Viscosité : 450 cP</span>
+              <span>Temp : 24.1 °C</span>
+            </div>
+          </div>
+
+          <!-- Machine 3 : Ligne Conditionnement -->
+          <div class="bg-slate-950 border border-indigo-500/40 rounded-xl p-4 flex flex-col justify-between shadow-lg shadow-indigo-950/20">
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-indigo-300 text-sm">Ligne 01 • Remplisseuse 1L</span>
+              <span class="px-2 py-0.5 text-[10px] font-bold rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">EN MARCHE</span>
+            </div>
+            <div class="my-4 text-center">
+              <div class="text-3xl font-black font-mono text-emerald-400">OF-2026-105</div>
+              <div class="text-xs text-slate-400">Solution Virucide 1000ml (720 / 1200 U)</div>
+              <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden mt-2">
+                <div class="bg-emerald-500 h-full rounded-full" style="width: 60%"></div>
+              </div>
+            </div>
+            <div class="text-[11px] text-slate-500 flex justify-between">
+              <span>Cadence : 1 000 U/h</span>
+              <span>Opérateur : Julien M.</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ========================================== -->
+    <!-- TAB 2 : PLANNING GANTT ATELIER            -->
+    <!-- ========================================== -->
+    <section id="view-gantt" class="tab-content hidden space-y-6">
+      
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-sm">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 class="text-xl sm:text-2xl font-bold text-white tracking-tight">Planning d'Ordonnancement Gantt</h1>
+            <p class="text-sm text-slate-400 mt-1">Ordonnancement et lissage de charge des Ordres de Fabrication (OF) sur les 3 lignes de production.</p>
+          </div>
+          <div class="text-xs text-slate-400 font-mono bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-800">
+            Semaine du 21 au 27 Septembre 2026
+          </div>
+        </div>
+
+        <!-- Grille Gantt -->
+        <div class="mt-6 border border-slate-800 rounded-xl overflow-hidden bg-slate-950">
+          <div class="overflow-x-auto">
+            <div class="min-w-[750px]">
+              
+              <!-- Header Jours -->
+              <div class="grid grid-cols-[220px_repeat(7,1fr)] bg-slate-900 border-b border-slate-800 text-xs font-semibold">
+                <div class="p-3 border-r border-slate-800 text-slate-400 uppercase">Lignes de Production</div>
+                <div class="p-2 text-center text-sky-400 bg-sky-950/30 border-r border-slate-800">Lun 21 (Auj.)</div>
+                <div class="p-2 text-center text-slate-300 border-r border-slate-800">Mar 22</div>
+                <div class="p-2 text-center text-slate-300 border-r border-slate-800">Mer 23</div>
+                <div class="p-2 text-center text-slate-300 border-r border-slate-800">Jeu 24</div>
+                <div class="p-2 text-center text-slate-300 border-r border-slate-800">Ven 25</div>
+                <div class="p-2 text-center text-slate-500 border-r border-slate-800">Sam 26</div>
+                <div class="p-2 text-center text-slate-500">Dim 27</div>
+              </div>
+
+              <!-- Ligne 1 : Conditionnement Flacons 1L -->
+              <div class="grid grid-cols-[220px_repeat(7,1fr)] border-b border-slate-800/80 min-h-[110px]">
+                <div class="p-3 border-r border-slate-800 bg-slate-900/40 flex flex-col justify-between">
+                  <div>
+                    <span class="font-bold text-xs text-white">LIGNE 01</span>
+                    <p class="text-[10px] text-slate-400">Flacons Virucide 1L (1000 U/h)</p>
+                  </div>
+                  <span class="text-[9px] text-emerald-400 font-mono">● En production</span>
+                </div>
+                
+                <!-- Cellules jours Ligne 1 -->
+                <div class="p-1.5 border-r border-slate-800/60 bg-sky-950/10">
+                  <div class="p-2 rounded-lg bg-emerald-950/80 border border-emerald-500/80 text-emerald-200 text-[10px]">
+                    <div class="font-bold flex justify-between"><span>OF-2026-105</span><span class="text-emerald-400">60%</span></div>
+                    <div class="truncate font-semibold mt-0.5">Solution Virucide 1L</div>
+                    <div class="text-[9px] text-slate-400 mt-1">720 / 1200 U</div>
+                  </div>
+                </div>
+
+                <div class="p-1.5 border-r border-slate-800/60">
+                  <div class="p-2 rounded-lg bg-indigo-950/80 border border-indigo-500/80 text-indigo-200 text-[10px]">
+                    <div class="font-bold flex justify-between"><span>OF-2026-106</span><span class="text-indigo-400">Planifié</span></div>
+                    <div class="truncate font-semibold mt-0.5">Solution Virucide 1L</div>
+                    <div class="text-[9px] text-slate-400 mt-1">1000 U • 7h</div>
+                  </div>
+                </div>
+
+                <div class="p-1.5 border-r border-slate-800/60"></div>
+                <div class="p-1.5 border-r border-slate-800/60">
+                  <div class="p-2 rounded-lg bg-indigo-950/80 border border-indigo-500/80 text-indigo-200 text-[10px]">
+                    <div class="font-bold flex justify-between"><span>OF-2026-109</span><span class="text-indigo-400">Planifié</span></div>
+                    <div class="truncate font-semibold mt-0.5">Virucide Spray 1L</div>
+                    <div class="text-[9px] text-slate-400 mt-1">1500 U • 10h</div>
+                  </div>
+                </div>
+                <div class="p-1.5 border-r border-slate-800/60"></div>
+                <div class="p-1.5 border-r border-slate-800/60 bg-slate-950/40"></div>
+                <div class="p-1.5 bg-slate-950/40"></div>
+              </div>
+
+              <!-- Ligne 2 : Bidons Savon 5L -->
+              <div class="grid grid-cols-[220px_repeat(7,1fr)] min-h-[110px]">
+                <div class="p-3 border-r border-slate-800 bg-slate-900/40 flex flex-col justify-between">
+                  <div>
+                    <span class="font-bold text-xs text-white">LIGNE 02</span>
+                    <p class="text-[10px] text-slate-400">Bidons Savon 5L (250 U/h)</p>
+                  </div>
+                  <span class="text-[9px] text-amber-400 font-mono">● En mélange</span>
+                </div>
+                
+                <div class="p-1.5 border-r border-slate-800/60 bg-sky-950/10">
+                  <div class="p-2 rounded-lg bg-amber-950/80 border border-amber-500/80 text-amber-200 text-[10px]">
+                    <div class="font-bold flex justify-between"><span>OF-2026-107</span><span class="text-amber-400">34%</span></div>
+                    <div class="truncate font-semibold mt-0.5">Savon Végétal 5L</div>
+                    <div class="text-[9px] text-slate-400 mt-1">120 / 350 U</div>
+                  </div>
+                </div>
+
+                <div class="p-1.5 border-r border-slate-800/60"></div>
+
+                <div class="p-1.5 border-r border-slate-800/60">
+                  <div class="p-2 rounded-lg bg-indigo-950/80 border border-indigo-500/80 text-indigo-200 text-[10px]">
+                    <div class="font-bold flex justify-between"><span>OF-2026-108</span><span class="text-indigo-400">Planifié</span></div>
+                    <div class="truncate font-semibold mt-0.5">Savon Liquide 5L</div>
+                    <div class="text-[9px] text-slate-400 mt-1">500 U • 9h</div>
+                  </div>
+                </div>
+
+                <div class="p-1.5 border-r border-slate-800/60"></div>
+                <div class="p-1.5 border-r border-slate-800/60">
+                  <div class="p-2 rounded-lg bg-indigo-950/80 border border-indigo-500/80 text-indigo-200 text-[10px]">
+                    <div class="font-bold flex justify-between"><span>OF-2026-110</span><span class="text-indigo-400">Planifié</span></div>
+                    <div class="truncate font-semibold mt-0.5">Savon Végétal 5L</div>
+                    <div class="text-[9px] text-slate-400 mt-1">250 U • 5h</div>
+                  </div>
+                </div>
+                <div class="p-1.5 border-r border-slate-800/60 bg-slate-950/40"></div>
+                <div class="p-1.5 bg-slate-950/40"></div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ========================================== -->
+    <!-- TAB 3 : ATELIER MES & DECLARATION         -->
+    <!-- ========================================== -->
+    <section id="view-mes" class="tab-content hidden space-y-6">
+      
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-sm">
+        <h1 class="text-xl sm:text-2xl font-bold text-white tracking-tight">Atelier MES • Exécution & Déclaration Directe</h1>
+        <p class="text-sm text-slate-400 mt-1">Poste opérateur conditionnement flacons avec compteurs interactifs en JavaScript pur.</p>
+
+        <!-- Formulaire de déclaration interactive -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+          
+          <!-- Carte OF Actif -->
+          <div class="bg-slate-950 border border-slate-800 rounded-xl p-5 space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div>
+                <span class="text-xs text-slate-500 uppercase font-mono">Ordre de Fabrication</span>
+                <div class="text-lg font-bold text-white">OF-2026-105 • Solution Virucide 1L</div>
+              </div>
+              <span class="px-2.5 py-1 text-xs font-bold rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
+                En Conditionnement
+              </span>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4 text-center">
+              <div class="bg-slate-900 p-3 rounded-lg border border-slate-800">
+                <span class="text-xs text-slate-400">Quantité Cible</span>
+                <div class="text-2xl font-black font-mono text-white">1 200 U</div>
+              </div>
+              <div class="bg-slate-900 p-3 rounded-lg border border-slate-800">
+                <span class="text-xs text-slate-400">Total Produit Actuel</span>
+                <div id="mes-counter-good" class="text-2xl font-black font-mono text-emerald-400">720 U</div>
+              </div>
+            </div>
+
+            <div class="space-y-1.5">
+              <div class="flex justify-between text-xs font-mono">
+                <span class="text-slate-400">Taux d'avancement</span>
+                <span id="mes-progress-pct" class="text-white font-bold">60%</span>
+              </div>
+              <div class="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden">
+                <div id="mes-progress-bar" class="bg-emerald-500 h-full rounded-full transition-all duration-300" style="width: 60%"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Déclaration d'incrément -->
+          <div class="bg-slate-950 border border-slate-800 rounded-xl p-5 space-y-4 flex flex-col justify-between">
+            <div>
+              <h3 class="text-sm font-bold text-white mb-2">Déclarer un lot de fabrication</h3>
+              <p class="text-xs text-slate-400">Saisissez les quantités sortantes du poste pour ajuster automatiquement le stock produit fini et le TRS :</p>
+              
+              <div class="grid grid-cols-2 gap-3 mt-4">
+                <div>
+                  <label class="block text-xs font-semibold text-slate-300 mb-1">Pièces Bonnes (+)</label>
+                  <input type="number" id="input-pieces-bonnes" value="25" min="1" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-indigo-500">
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-slate-300 mb-1">Rebuts (-)</label>
+                  <input type="number" id="input-rebuts" value="0" min="0" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-rose-500">
+                </div>
+              </div>
+            </div>
+
+            <button onclick="handleDeclareProduction()" class="w-full py-2.5 px-4 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-950 transition-all flex items-center justify-center space-x-2">
+              <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+              <span>Valider la Déclaration MES</span>
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ========================================== -->
+    <!-- TAB 4 : GESTION ERP & STOCKS               -->
+    <!-- ========================================== -->
+    <section id="view-erp" class="tab-content hidden space-y-6">
+      
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-sm">
+        <h1 class="text-xl sm:text-2xl font-bold text-white tracking-tight">ERP Industriel • Suivi des Stocks & Matières</h1>
+        <p class="text-sm text-slate-400 mt-1">Valorisation des stocks, alertes de réapprovisionnement et réservations pour ordres de fabrication.</p>
+
+        <!-- Tableau des stocks -->
+        <div class="mt-6 border border-slate-800 rounded-xl overflow-hidden bg-slate-950">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-900 text-slate-400 border-b border-slate-800 font-mono uppercase text-[11px]">
+              <tr>
+                <th class="p-3.5">Code Article</th>
+                <th class="p-3.5">Désignation</th>
+                <th class="p-3.5">Type</th>
+                <th class="p-3.5 text-right">Stock Actuel</th>
+                <th class="p-3.5 text-right">Seuil Mini</th>
+                <th class="p-3.5 text-right">Prix Unitaire</th>
+                <th class="p-3.5 text-center">Statut Appro</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800/80">
+              <tr class="hover:bg-slate-900/40">
+                <td class="p-3.5 font-mono font-bold text-sky-400">MP-ETH-96</td>
+                <td class="p-3.5 font-medium text-white">Éthanol Rectifié 96% Vrac</td>
+                <td class="p-3.5 text-slate-400">Matière Première</td>
+                <td class="p-3.5 text-right font-mono font-bold text-white">14 200 L</td>
+                <td class="p-3.5 text-right font-mono text-slate-400">4 000 L</td>
+                <td class="p-3.5 text-right font-mono text-slate-300">1.85 €</td>
+                <td class="p-3.5 text-center"><span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">STOCK OPTIMAL</span></td>
+              </tr>
+              <tr class="hover:bg-slate-900/40">
+                <td class="p-3.5 font-mono font-bold text-sky-400">MP-HUI-COCO</td>
+                <td class="p-3.5 font-medium text-white">Huile de Coprah Végétale Vrac</td>
+                <td class="p-3.5 text-slate-400">Matière Première</td>
+                <td class="p-3.5 text-right font-mono font-bold text-white">4 850 L</td>
+                <td class="p-3.5 text-right font-mono text-slate-400">2 500 L</td>
+                <td class="p-3.5 text-right font-mono text-slate-300">3.20 €</td>
+                <td class="p-3.5 text-center"><span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">STOCK OPTIMAL</span></td>
+              </tr>
+              <tr class="hover:bg-slate-900/40">
+                <td class="p-3.5 font-mono font-bold text-sky-400">EMB-FLA-1L</td>
+                <td class="p-3.5 font-medium text-white">Flacon PEHD 1000ml Blanc Opaque</td>
+                <td class="p-3.5 text-slate-400">Emballage</td>
+                <td class="p-3.5 text-right font-mono font-bold text-amber-400">2 100 U</td>
+                <td class="p-3.5 text-right font-mono text-slate-400">2 000 U</td>
+                <td class="p-3.5 text-right font-mono text-slate-300">0.42 €</td>
+                <td class="p-3.5 text-center"><span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/40">PROCHE SEUIL</span></td>
+              </tr>
+              <tr class="hover:bg-slate-900/40">
+                <td class="p-3.5 font-mono font-bold text-emerald-400">PF-VIR-1L</td>
+                <td class="p-3.5 font-medium text-white">Solution Virucide Surfaces 1L</td>
+                <td class="p-3.5 text-emerald-300">Produit Fini</td>
+                <td id="erp-stock-pf" class="p-3.5 text-right font-mono font-bold text-white">1 420 U</td>
+                <td class="p-3.5 text-right font-mono text-slate-400">500 U</td>
+                <td class="p-3.5 text-right font-mono text-slate-300">6.50 €</td>
+                <td class="p-3.5 text-center"><span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">DISPONIBLE</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ========================================== -->
+    <!-- TAB 5 : PREDICTIONS DE PERFORMANCE (J+3)  -->
+    <!-- ========================================== -->
+    <section id="view-predictions" class="tab-content hidden space-y-6">
+      
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-sm space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <div class="flex items-center space-x-2">
+              <h1 class="text-xl sm:text-2xl font-bold text-white tracking-tight">Prédictions de Tendances de Performance (J+1 à J+3)</h1>
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-950 text-purple-300 border border-purple-800 font-mono">Inférence 7 jours</span>
+            </div>
+            <p class="text-sm text-slate-400 mt-1">Projection mathématique simple (Régression OLS) basée sur les données des 7 derniers jours.</p>
+          </div>
+        </div>
+
+        <!-- 3 Cartes Prévisions J+1, J+2, J+3 -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          
+          <!-- J+1 -->
+          <div class="bg-gradient-to-b from-purple-950/40 to-slate-950 border border-purple-500/40 rounded-xl p-4 space-y-3">
+            <div class="flex justify-between items-center text-xs">
+              <span class="font-bold text-white">J+1 (Mardi 22)</span>
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">≥ Cible 85%</span>
+            </div>
+            <div class="flex items-baseline justify-between">
+              <div class="text-3xl font-extrabold font-mono text-purple-300">85.4%</div>
+              <div class="text-xs font-bold text-emerald-400">+0.7 pts</div>
+            </div>
+            <div class="text-[11px] text-slate-400 font-mono">Fourchette IC95% : [83.2% - 87.6%]</div>
+            <div class="pt-2 border-t border-slate-800 text-[10px] text-slate-300 flex justify-between">
+              <span>Dispo : 93.1%</span>
+              <span>Perf : 94.4%</span>
+              <span>Qualité : 97.6%</span>
+            </div>
+          </div>
+
+          <!-- J+2 -->
+          <div class="bg-gradient-to-b from-purple-950/40 to-slate-950 border border-purple-500/40 rounded-xl p-4 space-y-3">
+            <div class="flex justify-between items-center text-xs">
+              <span class="font-bold text-white">J+2 (Mercredi 23)</span>
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">≥ Cible 85%</span>
+            </div>
+            <div class="flex items-baseline justify-between">
+              <div class="text-3xl font-extrabold font-mono text-purple-300">86.1%</div>
+              <div class="text-xs font-bold text-emerald-400">+1.4 pts</div>
+            </div>
+            <div class="text-[11px] text-slate-400 font-mono">Fourchette IC95% : [83.5% - 88.7%]</div>
+            <div class="pt-2 border-t border-slate-800 text-[10px] text-slate-300 flex justify-between">
+              <span>Dispo : 93.6%</span>
+              <span>Perf : 94.8%</span>
+              <span>Qualité : 97.8%</span>
+            </div>
+          </div>
+
+          <!-- J+3 -->
+          <div class="bg-gradient-to-b from-purple-950/40 to-slate-950 border border-purple-500/40 rounded-xl p-4 space-y-3">
+            <div class="flex justify-between items-center text-xs">
+              <span class="font-bold text-white">J+3 (Jeudi 24)</span>
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">≥ Cible 85%</span>
+            </div>
+            <div class="flex items-baseline justify-between">
+              <div class="text-3xl font-extrabold font-mono text-purple-300">86.7%</div>
+              <div class="text-xs font-bold text-emerald-400">+2.0 pts</div>
+            </div>
+            <div class="text-[11px] text-slate-400 font-mono">Fourchette IC95% : [83.8% - 89.6%]</div>
+            <div class="pt-2 border-t border-slate-800 text-[10px] text-slate-300 flex justify-between">
+              <span>Dispo : 94.0%</span>
+              <span>Perf : 95.1%</span>
+              <span>Qualité : 98.0%</span>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Graphique SVG Vectoriel Autonome (7j historique + 3j prévisions) -->
+        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+          <div class="text-xs font-semibold text-slate-300 mb-2 flex justify-between">
+            <span>Trajectoire Temporelle TRS (10 Jours)</span>
+            <span class="text-slate-500 text-[11px] font-mono">Bleu = Réel • Violet pointillé = Inférence J+3</span>
+          </div>
+
+          <svg class="w-full h-48" viewBox="0 0 600 150">
+            <!-- Grille horizontale -->
+            <line x1="40" y1="20" x2="580" y2="20" stroke="#334155" stroke-dasharray="2 2" />
+            <line x1="40" y1="60" x2="580" y2="60" stroke="#334155" stroke-dasharray="2 2" />
+            <line x1="40" y1="100" x2="580" y2="100" stroke="#334155" stroke-dasharray="2 2" />
+            
+            <!-- Ligne Cible 85% -->
+            <line x1="40" y1="65" x2="580" y2="65" stroke="#10b981" stroke-dasharray="4 4" stroke-width="1.5" />
+            <text x="50" y="60" fill="#10b981" font-size="10" font-family="monospace">Seuil Cible 85%</text>
+
+            <!-- Ligne de démarcation Aujourd'hui -->
+            <line x1="410" y1="10" x2="410" y2="135" stroke="#38bdf8" stroke-dasharray="3 3" stroke-width="1.5" />
+            <text x="350" y="15" fill="#38bdf8" font-size="10" font-family="monospace">Aujourd'hui</text>
+
+            <!-- Zone de courbe historique (7j) -->
+            <polyline fill="none" stroke="#38bdf8" stroke-width="2.5" points="50,95 110,85 170,105 230,75 290,60 350,72 410,66" />
+            
+            <!-- Points historiques -->
+            <circle cx="50" cy="95" r="3.5" fill="#38bdf8" />
+            <circle cx="110" cy="85" r="3.5" fill="#38bdf8" />
+            <circle cx="170" cy="105" r="3.5" fill="#38bdf8" />
+            <circle cx="230" cy="75" r="3.5" fill="#38bdf8" />
+            <circle cx="290" cy="60" r="3.5" fill="#38bdf8" />
+            <circle cx="350" cy="72" r="3.5" fill="#38bdf8" />
+            <circle cx="410" cy="66" r="4.5" fill="#38bdf8" />
+
+            <!-- Trajectoire d'inférence (3j futurs) -->
+            <polyline fill="none" stroke="#c084fc" stroke-width="2.5" stroke-dasharray="5 5" points="410,66 470,58 530,52 580,48" />
+            <circle cx="470" cy="58" r="4" fill="#c084fc" />
+            <circle cx="530" cy="52" r="4" fill="#c084fc" />
+            <circle cx="580" cy="48" r="4" fill="#c084fc" />
+
+            <!-- Labels X -->
+            <text x="40" y="145" fill="#94a3b8" font-size="9">J-6</text>
+            <text x="100" y="145" fill="#94a3b8" font-size="9">J-5</text>
+            <text x="160" y="145" fill="#94a3b8" font-size="9">J-4</text>
+            <text x="220" y="145" fill="#94a3b8" font-size="9">J-3</text>
+            <text x="280" y="145" fill="#94a3b8" font-size="9">J-2</text>
+            <text x="340" y="145" fill="#94a3b8" font-size="9">J-1</text>
+            <text x="400" y="145" fill="#38bdf8" font-size="9" font-weight="bold">Auj.</text>
+            <text x="460" y="145" fill="#c084fc" font-size="9" font-weight="bold">J+1</text>
+            <text x="520" y="145" fill="#c084fc" font-size="9" font-weight="bold">J+2</text>
+            <text x="565" y="145" fill="#c084fc" font-size="9" font-weight="bold">J+3</text>
+          </svg>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ========================================== -->
+    <!-- TAB 6 : ARCHITECTURE C# .NET 8/9           -->
+    <!-- ========================================== -->
+    <section id="view-csharp" class="tab-content hidden space-y-6">
+      
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-sm space-y-6">
+        <div>
+          <h1 class="text-xl sm:text-2xl font-bold text-white tracking-tight">Architecture C# (.NET 8/9 Monolithe Modulaire)</h1>
+          <p class="text-sm text-slate-400 mt-1">Exemple de code C# backend minimal API et service de calcul TRS réutilisables dans une solution .NET standard.</p>
+        </div>
+
+        <div class="bg-slate-950 border border-slate-800 rounded-xl overflow-hidden">
+          <div class="px-4 py-2 bg-slate-900 border-b border-slate-800 flex justify-between items-center text-xs font-mono text-slate-400">
+            <span>BladyProduction.Mes.Services/OeeCalculatorService.cs</span>
+            <span class="text-indigo-400">C# 12 / .NET 8-9</span>
+          </div>
+          <pre class="p-4 text-xs font-mono text-slate-300 overflow-x-auto leading-relaxed">
+<span class="text-purple-400">namespace</span> <span class="text-sky-300">BladyProduction.Mes.Services</span>;
+
+<span class="text-slate-500">// Record C# immuable pour les métriques TRS</span>
+<span class="text-purple-400">public record</span> <span class="text-emerald-400">OeeMetricsDto</span>(
+    <span class="text-amber-300">double</span> Disponibilite, 
+    <span class="text-amber-300">double</span> Performance, 
+    <span class="text-amber-300">double</span> Qualite, 
+    <span class="text-amber-300">double</span> TrsGlobal
+);
+
+<span class="text-purple-400">public class</span> <span class="text-emerald-400">OeeCalculatorService</span>
+{
+    <span class="text-purple-400">public</span> <span class="text-emerald-400">OeeMetricsDto</span> <span class="text-blue-400">CalculerTrs</span>(<span class="text-amber-300">double</span> tempsFonctionnementMin, <span class="text-amber-300">double</span> tempsOuvertureMin, 
+                                     <span class="text-amber-300">int</span> piecesProduites, <span class="text-amber-300">int</span> piecesTheoriques, <span class="text-amber-300">int</span> rebuts)
+    {
+        <span class="text-amber-300">var</span> d = Math.Clamp(tempsFonctionnementMin / tempsOuvertureMin * <span class="text-orange-400">100.0</span>, <span class="text-orange-400">0</span>, <span class="text-orange-400">100</span>);
+        <span class="text-amber-300">var</span> p = Math.Clamp((<span class="text-amber-300">double</span>)piecesProduites / piecesTheoriques * <span class="text-orange-400">100.0</span>, <span class="text-orange-400">0</span>, <span class="text-orange-400">100</span>);
+        <span class="text-amber-300">var</span> q = piecesProduites > <span class="text-orange-400">0</span> ? Math.Clamp((<span class="text-amber-300">double</span>)(piecesProduites - rebuts) / piecesProduites * <span class="text-orange-400">100.0</span>, <span class="text-orange-400">0</span>, <span class="text-orange-400">100</span>) : <span class="text-orange-400">100</span>;
+        <span class="text-amber-300">var</span> trs = Math.Round((d / <span class="text-orange-400">100.0</span>) * (p / <span class="text-orange-400">100.0</span>) * (q / <span class="text-orange-400">100.0</span>) * <span class="text-orange-400">100.0</span>, <span class="text-orange-400">1</span>);
+
+        <span class="text-purple-400">return new</span> <span class="text-emerald-400">OeeMetricsDto</span>(Math.Round(d, <span class="text-orange-400">1</span>), Math.Round(p, <span class="text-orange-400">1</span>), Math.Round(q, <span class="text-orange-400">1</span>), trs);
+    }
+}</pre>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="bg-slate-900 border-t border-slate-800 py-4 text-center text-xs text-slate-500 font-mono">
+    MonUsine ERP/MES • Document HTML Autonome • Déployable sans serveur ni bundler • BladyProduction
+  </footer>
+
+  <!-- SCRIPT LOGIQUE INTERACTIVE PURE (ZERO DEPENDANCE) -->
+  <script>
+    // État local en JavaScript pur
+    let state = {
+      quantiteProduite: 720,
+      quantiteCible: 1200,
+      stockPf: 1420
+    };
+
+    // Gestion du basculement d'onglets
+    function switchTab(tabId) {
+      // Masquer tous les contenus
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      
+      // Désactiver le style de tous les boutons
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('bg-indigo-600', 'text-white', 'shadow-sm');
+        btn.classList.add('text-slate-400');
+      });
+
+      // Afficher le contenu ciblé
+      const targetContent = document.getElementById('view-' + tabId);
+      if (targetContent) targetContent.classList.remove('hidden');
+
+      // Activer le bouton sélectionné
+      const targetBtn = document.getElementById('tab-btn-' + tabId);
+      if (targetBtn) {
+        targetBtn.classList.remove('text-slate-400');
+        targetBtn.classList.add('bg-indigo-600', 'text-white', 'shadow-sm');
+      }
+    }
+
+    // Déclaration de production interactive
+    function handleDeclareProduction() {
+      const inputGood = document.getElementById('input-pieces-bonnes');
+      const inputRebuts = document.getElementById('input-rebuts');
+      
+      const bonnes = parseInt(inputGood.value, 10) || 0;
+      const rebuts = parseInt(inputRebuts.value, 10) || 0;
+
+      if (bonnes <= 0) {
+        alert('Veuillez renseigner un nombre positif de pièces bonnes.');
+        return;
+      }
+
+      state.quantiteProduite += bonnes;
+      state.stockPf += bonnes;
+
+      // Calcul nouveau pourcentage
+      const pct = Math.min(100, Math.round((state.quantiteProduite / state.quantiteCible) * 100));
+
+      // Mise à jour du DOM
+      document.getElementById('mes-counter-good').textContent = state.quantiteProduite + ' U';
+      document.getElementById('mes-progress-pct').textContent = pct + '%';
+      document.getElementById('mes-progress-bar').style.width = pct + '%';
+      
+      const stockPfEl = document.getElementById('erp-stock-pf');
+      if (stockPfEl) stockPfEl.textContent = state.stockPf + ' U';
+
+      alert(`✅ Déclaration enregistrée avec succès :\n+${bonnes} flacons produits (Stock PF actualisé à ${state.stockPf} U).\nAvancement OF : ${pct}%.`);
+    }
+
+    // Télécharger ce document sous forme de fichier HTML physique
+    function downloadSelfHtml() {
+      const htmlContent = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+      const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'monusine-erp-mes-standalone.html';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+  </script>
+
+</body>
+</html>

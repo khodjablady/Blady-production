@@ -56,6 +56,18 @@ service cloud.firestore {
         && data.createdBy is string;
     }
 
+    function isValidControleQualite(data) {
+      return data.keys().hasAll(['id', 'numeroLot', 'articleCode', 'inspecteur', 'decision', 'dateControle', 'createdBy'])
+        && data.keys().hasOnly(['id', 'numeroLot', 'numeroOF', 'articleCode', 'articleDesignation', 'inspecteur', 'phaseControle', 'decision', 'conforme', 'alertesCount', 'critiquesCount', 'dateControle', 'remarques', 'aspectVisuel', 'parametres', 'createdBy'])
+        && data.id is string && data.id.size() > 0 && data.id.size() <= 64
+        && data.numeroLot is string && data.numeroLot.size() > 0 && data.numeroLot.size() <= 64
+        && data.articleCode is string && data.articleCode.size() > 0 && data.articleCode.size() <= 64
+        && data.inspecteur is string && data.inspecteur.size() > 0 && data.inspecteur.size() <= 128
+        && data.decision in ['Conforme', 'NonConforme', 'EnQuarantaine', 'Derogation']
+        && data.dateControle is string && data.dateControle.size() > 0 && data.dateControle.size() <= 64
+        && data.createdBy is string;
+    }
+
     // Health check doc
     match /test/{docId} {
       allow read: if true;
@@ -93,6 +105,15 @@ service cloud.firestore {
       allow get, list: if isSignedIn();
       allow create: if isSignedIn() && isValidId(interventionId) && isValidIntervention(request.resource.data);
       allow update: if isSignedIn() && isValidId(interventionId) && isValidIntervention(request.resource.data)
+        && request.resource.data.id == resource.data.id;
+      allow delete: if isSignedIn();
+    }
+
+    // Quality Controls (Lots)
+    match /controles_qualite/{qcId} {
+      allow get, list: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(qcId) && isValidControleQualite(request.resource.data);
+      allow update: if isSignedIn() && isValidId(qcId) && isValidControleQualite(request.resource.data)
         && request.resource.data.id == resource.data.id;
       allow delete: if isSignedIn();
     }
