@@ -464,6 +464,17 @@ export default function App() {
     showNotification(`État machine mis à jour : ${newStatut}`, 'info');
   };
 
+  // 8b. Update machine full configuration (parameters, nominal speed, name, etc.)
+  const handleUpdateMachine = (updatedMachine: MachineLigne) => {
+    setMachines(prev =>
+      prev.map(m => (m.id === updatedMachine.id ? updatedMachine : m))
+    );
+    showNotification(
+      `Machine "${updatedMachine.nom}" reconfigurée avec succès : Cadence ${updatedMachine.cadenceNominale} U/h, Statut ${updatedMachine.statut}.`,
+      'success'
+    );
+  };
+
   // 9. Maintenance intervention management
   const handleSaveIntervention = (newIntervention: InterventionMaintenance, remettreEnMarche: boolean) => {
     setInterventions(prev => [newIntervention, ...prev]);
@@ -655,6 +666,7 @@ export default function App() {
             oee={oee}
             onUpdateOee={(updated) => setOee(prev => ({ ...prev, ...updated }))}
             onOpenDeclareModal={() => handleOpenDeclareModal()}
+            onUpdateMachine={handleUpdateMachine}
             onGoToErp={() => setActiveTab('erp')}
             onGoToMes={() => setActiveTab('mes')}
             onGoToCSharp={() => setActiveTab('csharp')}
@@ -663,6 +675,7 @@ export default function App() {
             onGoToPlanning={() => setActiveTab('planning')}
             onGoToQuality={() => setActiveTab('quality')}
             onGoToTraceability={() => setActiveTab('traceability')}
+            onGoToConnectivity={() => setActiveTab('connectivity')}
           />
         )}
 
@@ -696,6 +709,7 @@ export default function App() {
             onCreerOf={() => setIsNewOfModalOpen(true)}
             onGoToQuality={() => setActiveTab('quality')}
             onGoToTraceability={() => setActiveTab('traceability')}
+            onGoToConnectivity={() => setActiveTab('connectivity')}
           />
         )}
 
@@ -748,6 +762,7 @@ export default function App() {
             onSaveIntervention={handleSaveIntervention}
             onDeleteIntervention={handleDeleteIntervention}
             onMachineStateChange={handleMachineStateChange}
+            onUpdateMachine={handleUpdateMachine}
           />
         )}
 
@@ -755,6 +770,7 @@ export default function App() {
           <IndustrialConnectivityView
             machines={machines}
             onMachineStateChange={handleMachineStateChange}
+            onUpdateMachine={handleUpdateMachine}
             isLiveSimulating={isSimulating}
           />
         )}

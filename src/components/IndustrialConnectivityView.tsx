@@ -23,26 +23,45 @@ import {
   Wrench,
   Bug,
   RotateCcw,
-  X
+  X,
+  Settings
 } from 'lucide-react';
 import { MachineLigne, OpcUaNode, PlcStation, ModbusLogEntry, SimulatedFaultType } from '../types';
 import { INITIAL_PLCS, INITIAL_MODBUS_LOGS, generateModbusTelegram } from '../data/plcData';
 import { PlcDashboard } from './PlcDashboard';
 import { ModbusLogTerminal } from './ModbusLogTerminal';
+import { MachineEditModal } from './MachineEditModal';
 
 interface IndustrialConnectivityViewProps {
   machines: MachineLigne[];
   onMachineStateChange: (machineId: number, newStatut: MachineLigne['statut']) => void;
+  onUpdateMachine?: (updatedMachine: MachineLigne) => void;
   isLiveSimulating: boolean;
 }
 
 export const IndustrialConnectivityView: React.FC<IndustrialConnectivityViewProps> = ({
   machines,
   onMachineStateChange,
+  onUpdateMachine,
   isLiveSimulating
 }) => {
   // Navigation tabs inside connectivity
-  const [subTab, setSubTab] = useState<'plc-modbus' | 'opc-ua' | 'csharp'>('plc-modbus');
+  const [subTab, setSubTab] = useState<'plc-modbus' | 'opc-ua' | 'machines' | 'csharp'>('plc-modbus');
+
+  // Machine editing modal state
+  const [editingMachine, setEditingMachine] = useState<MachineLigne | null>(null);
+  const [isMachineModalOpen, setIsMachineModalOpen] = useState<boolean>(false);
+
+  const handleOpenEditMachine = (machine: MachineLigne) => {
+    setEditingMachine(machine);
+    setIsMachineModalOpen(true);
+  };
+
+  const handleSaveMachine = (updatedMachine: MachineLigne) => {
+    if (onUpdateMachine) {
+      onUpdateMachine(updatedMachine);
+    }
+  };
 
   // PLC Fleet state
   const [plcs, setPlcs] = useState<PlcStation[]>(INITIAL_PLCS);
@@ -886,6 +905,18 @@ export const IndustrialConnectivityView: React.FC<IndustrialConnectivityViewProp
           </button>
 
           <button
+            onClick={() => setSubTab('machines')}
+            className={`flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              subTab === 'machines'
+                ? 'bg-sky-600 text-white shadow-sm font-semibold'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+            }`}
+          >
+            <Settings className="w-4 h-4 text-amber-400" />
+            <span>Machines Opérationnelles ({machines.length})</span>
+          </button>
+
+          <button
             onClick={() => setSubTab('csharp')}
             className={`flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
               subTab === 'csharp'
@@ -1047,12 +1078,24 @@ export const IndustrialConnectivityView: React.FC<IndustrialConnectivityViewProp
             <div className="space-y-4 text-xs">
               {/* Machine toggles */}
               <div className="p-3.5 bg-slate-950 rounded-xl border border-slate-800 space-y-3">
-                <div className="font-medium text-white">États Opérationnels Machines :</div>
+                <div className="flex items-center justify-between">
+                  <div className="font-medium text-white">États Opérationnels Machines :</div>
+                  <button
+                    onClick={() => setSubTab('machines')}
+                    className="text-[11px] text-sky-400 hover:text-sky-300 font-semibold flex items-center gap-1 transition-colors"
+                  >
+                    <span>Gérer le parc</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </button>
+                </div>
                 
                 {machines.map(m => (
-                  <div key={m.id} className="flex items-center justify-between text-xs pt-1 border-t border-slate-800/60 first:border-0 first:pt-0">
-                    <span className="text-slate-300 truncate max-w-[140px]">{m.nom.split(' ')[0]} {m.nom.split(' ')[1] || ''}</span>
-                    <div className="flex items-center space-x-1">
+                  <div key={m.id} className="flex items-center justify-between text-xs pt-1.5 border-t border-slate-800/60 first:border-0 first:pt-0">
+                    <div className="flex flex-col truncate max-w-[130px]">
+                      <span className="text-slate-200 font-medium truncate">{m.nom}</span>
+                      <span className="text-[10px] text-slate-500 font-mono">{m.cadenceActuelle} / {m.cadenceNominale} U/h</span>
+                    </div>
+                    <div className="flex items-center space-x-1.5">
                       <button
                         onClick={() => onMachineStateChange(m.id, m.statut === 'EnMarche' ? 'ArretNettoyage' : 'EnMarche')}
                         className={`px-2 py-0.5 rounded text-[10px] font-semibold border ${
@@ -1060,8 +1103,17 @@ export const IndustrialConnectivityView: React.FC<IndustrialConnectivityViewProp
                             ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
                             : 'bg-amber-500/10 text-amber-300 border-amber-500/30'
                         }`}
+                        title="Basculer l'état opérationnel"
                       >
                         {m.statut}
+                      </button>
+
+                      <button
+                        onClick={() => handleOpenEditMachine(m)}
+                        className="p-1 rounded bg-slate-800 hover:bg-slate-700 text-sky-400 hover:text-white border border-slate-700 text-[10px] transition-colors"
+                        title="Modifier / Configurer cette machine"
+                      >
+                        <Settings className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   </div>
@@ -1077,6 +1129,155 @@ export const IndustrialConnectivityView: React.FC<IndustrialConnectivityViewProp
                 </p>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* VIEW: OPERATIONAL MACHINES FLEET & CONFIGURATION */}
+      {subTab === 'machines' && (
+        <div className="space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-sm">
+            <div>
+              <h3 className="text-sm font-bold text-white flex items-center space-x-2">
+                <Settings className="w-4 h-4 text-amber-400" />
+                <span>Gestion & Configuration des Machines Opérationnelles</span>
+              </h3>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Supervisez et modifiez en direct les paramètres nominaux, vitesses, seuils et nœuds OPC UA des machines de la ligne.
+              </p>
+            </div>
+            <div className="flex items-center space-x-2 text-xs">
+              <span className="px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 font-mono text-[11px] font-semibold">
+                {machines.filter(m => m.statut === 'EnMarche').length} / {machines.length} en marche
+              </span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {machines.map(m => {
+              const performancePct = m.cadenceNominale > 0 
+                ? Math.round((m.cadenceActuelle / m.cadenceNominale) * 100) 
+                : 0;
+
+              return (
+                <div 
+                  key={m.id}
+                  className="bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-2xl p-5 shadow-sm space-y-4 transition-all flex flex-col justify-between"
+                >
+                  <div className="space-y-3">
+                    {/* Header */}
+                    <div className="flex items-start justify-between gap-2 border-b border-slate-800 pb-3">
+                      <div>
+                        <div className="flex items-center space-x-2">
+                          <span className="font-mono text-[10px] font-bold text-sky-400 bg-sky-950 px-1.5 py-0.5 rounded border border-sky-800">
+                            #{m.id}
+                          </span>
+                          <h4 className="text-sm font-bold text-white truncate max-w-[170px]" title={m.nom}>
+                            {m.nom}
+                          </h4>
+                        </div>
+                        <span className="text-[11px] text-slate-400 block mt-1">
+                          Type : <strong className="text-slate-200">{m.type}</strong>
+                        </span>
+                      </div>
+
+                      {/* Status badge */}
+                      <span className={`px-2.5 py-0.5 rounded text-[10px] font-bold border ${
+                        m.statut === 'EnMarche'
+                          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                          : m.statut === 'EnAttente'
+                            ? 'bg-sky-500/10 text-sky-300 border-sky-500/30'
+                            : m.statut === 'ArretNettoyage'
+                              ? 'bg-amber-500/10 text-amber-300 border-amber-500/30'
+                              : 'bg-rose-500/10 text-rose-400 border-rose-500/30'
+                      }`}>
+                        {m.statut === 'EnMarche' ? '● En Marche' : m.statut === 'EnAttente' ? '○ En Attente' : m.statut === 'ArretNettoyage' ? '∿ Nettoyage CIP' : '⚠ En Panne'}
+                      </span>
+                    </div>
+
+                    {/* Cadences */}
+                    <div className="bg-slate-950 p-3 rounded-xl border border-slate-800/80 space-y-2 text-xs">
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">Cadence réelle / nominale :</span>
+                        <span className="font-mono font-bold text-white">
+                          {m.cadenceActuelle} / {m.cadenceNominale} U/h
+                        </span>
+                      </div>
+
+                      <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                        <div 
+                          className={`h-full rounded-full transition-all ${
+                            performancePct >= 90 ? 'bg-emerald-500' : performancePct >= 70 ? 'bg-amber-500' : 'bg-rose-500'
+                          }`}
+                          style={{ width: `${Math.min(100, Math.max(0, performancePct))}%` }}
+                        />
+                      </div>
+                      <div className="flex justify-between text-[10px] text-slate-500 font-mono">
+                        <span>Rendement Vitesse</span>
+                        <span className={performancePct >= 90 ? 'text-emerald-400 font-bold' : 'text-amber-400 font-bold'}>
+                          {performancePct}%
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Sensors / Physical values */}
+                    <div className="grid grid-cols-2 gap-2 text-[11px] font-mono">
+                      {m.temperatureC !== undefined && (
+                        <div className="p-2 rounded-lg bg-slate-950/70 border border-slate-800 flex justify-between">
+                          <span className="text-slate-400">Temp. :</span>
+                          <span className="text-amber-300 font-bold">{m.temperatureC}°C</span>
+                        </div>
+                      )}
+                      {m.pressionBar !== undefined && (
+                        <div className="p-2 rounded-lg bg-slate-950/70 border border-slate-800 flex justify-between">
+                          <span className="text-slate-400">Press. :</span>
+                          <span className="text-cyan-300 font-bold">{m.pressionBar} bar</span>
+                        </div>
+                      )}
+                      {m.capaciteMaxLitres !== undefined && (
+                        <div className="p-2 rounded-lg bg-slate-950/70 border border-slate-800 flex justify-between">
+                          <span className="text-slate-400">Capacité :</span>
+                          <span className="text-slate-200">{m.capaciteMaxLitres} L</span>
+                        </div>
+                      )}
+                      {m.niveauCuveLitres !== undefined && (
+                        <div className="p-2 rounded-lg bg-slate-950/70 border border-slate-800 flex justify-between">
+                          <span className="text-slate-400">Niveau :</span>
+                          <span className="text-emerald-300 font-bold">{m.niveauCuveLitres} L</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* OPC UA Node */}
+                    <div className="text-[10px] font-mono text-slate-400 bg-slate-950 p-2 rounded-lg border border-slate-800/80 truncate">
+                      <span className="text-slate-500">Nœud OPC UA:</span> <span className="text-sky-300">{m.nodeOpcUa}</span>
+                    </div>
+                  </div>
+
+                  {/* Actions Bar */}
+                  <div className="pt-3 border-t border-slate-800 flex items-center justify-between gap-2">
+                    <button
+                      onClick={() => onMachineStateChange(m.id, m.statut === 'EnMarche' ? 'ArretNettoyage' : 'EnMarche')}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
+                        m.statut === 'EnMarche'
+                          ? 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border-amber-500/30'
+                          : 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                      }`}
+                    >
+                      {m.statut === 'EnMarche' ? 'Arrêter / Nettoyer' : 'Démarrer'}
+                    </button>
+
+                    <button
+                      onClick={() => handleOpenEditMachine(m)}
+                      className="px-3.5 py-1.5 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-bold shadow-md shadow-sky-950/40 transition-colors flex items-center space-x-1.5"
+                    >
+                      <Settings className="w-3.5 h-3.5" />
+                      <span>Modifier / Configurer</span>
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
@@ -1160,6 +1361,17 @@ public class ModbusTcpMasterClient : IModbusTcpMasterClient
           </div>
         </div>
       )}
+
+      {/* Machine Edit Modal */}
+      <MachineEditModal
+        isOpen={isMachineModalOpen}
+        machine={editingMachine}
+        onClose={() => {
+          setIsMachineModalOpen(false);
+          setEditingMachine(null);
+        }}
+        onSave={handleSaveMachine}
+      />
 
     </div>
   );

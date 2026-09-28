@@ -25,10 +25,12 @@ import {
   Sparkles,
   FileSpreadsheet,
   ShieldCheck,
-  CheckCheck
+  CheckCheck,
+  Settings
 } from 'lucide-react';
 import { MachineLigne, InterventionMaintenance, InterventionType, PostInterventionStatus } from '../types';
 import { useAuth } from '../context/AuthContext';
+import { MachineEditModal } from './MachineEditModal';
 
 interface JournalMaintenanceProps {
   machines: MachineLigne[];
@@ -36,6 +38,7 @@ interface JournalMaintenanceProps {
   onSaveIntervention: (intervention: InterventionMaintenance, remettreEnMarche: boolean) => void;
   onDeleteIntervention: (id: string) => void;
   onMachineStateChange?: (machineId: number, status: MachineLigne['statut']) => void;
+  onUpdateMachine?: (updatedMachine: MachineLigne) => void;
 }
 
 export const JournalMaintenance: React.FC<JournalMaintenanceProps> = ({
@@ -43,7 +46,8 @@ export const JournalMaintenance: React.FC<JournalMaintenanceProps> = ({
   interventions,
   onSaveIntervention,
   onDeleteIntervention,
-  onMachineStateChange
+  onMachineStateChange,
+  onUpdateMachine
 }) => {
   const { user, profile } = useAuth();
 
@@ -63,6 +67,8 @@ export const JournalMaintenance: React.FC<JournalMaintenanceProps> = ({
   const [csvDelimiter, setCsvDelimiter] = useState<';' | ','>(';');
   const [includeAuditHeader, setIncludeAuditHeader] = useState<boolean>(true);
   const [exportSuccessNotification, setExportSuccessNotification] = useState<string | null>(null);
+  const [editingMachine, setEditingMachine] = useState<MachineLigne | null>(null);
+  const [isMachineModalOpen, setIsMachineModalOpen] = useState(false);
 
   // Form State for new intervention
   const defaultTechnician = profile?.displayName || user?.displayName || user?.email?.split('@')[0] || 'Laurent Dubois';
@@ -524,12 +530,22 @@ export const JournalMaintenance: React.FC<JournalMaintenanceProps> = ({
                   </div>
                 </div>
 
-                <div className="mt-3 pt-2 border-t border-slate-800/80 flex items-center justify-between">
+                <div className="mt-3 pt-2 border-t border-slate-800/80 flex items-center justify-between gap-1.5">
                   <button
                     onClick={() => handleOpenNewModal(m.id)}
-                    className="w-full text-center text-[10px] font-medium text-sky-400 hover:text-sky-300 hover:bg-sky-950/40 py-1 rounded transition-colors"
+                    className="flex-1 text-center text-[10px] font-medium text-sky-400 hover:text-sky-300 hover:bg-sky-950/40 py-1 rounded transition-colors"
                   >
-                    + Consigner réparation
+                    + Réparation
+                  </button>
+                  <button
+                    onClick={() => {
+                      setEditingMachine(m);
+                      setIsMachineModalOpen(true);
+                    }}
+                    className="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 text-[10px] transition-colors"
+                    title="Modifier / Configurer cette machine"
+                  >
+                    <Settings className="w-3.5 h-3.5 text-amber-400" />
                   </button>
                 </div>
               </div>
@@ -1458,6 +1474,21 @@ export const JournalMaintenance: React.FC<JournalMaintenanceProps> = ({
           </div>
         </div>
       )}
+
+      {/* Machine Edit Modal */}
+      <MachineEditModal
+        isOpen={isMachineModalOpen}
+        machine={editingMachine}
+        onClose={() => {
+          setIsMachineModalOpen(false);
+          setEditingMachine(null);
+        }}
+        onSave={(updated) => {
+          if (onUpdateMachine) {
+            onUpdateMachine(updated);
+          }
+        }}
+      />
 
     </div>
   );

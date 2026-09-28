@@ -15,7 +15,8 @@ import {
   PlusCircle,
   FileCheck,
   FlaskConical,
-  ExternalLink
+  ExternalLink,
+  Cpu
 } from 'lucide-react';
 import { OrdreFabrication, Article, MachineLigne, OeeMetrics } from '../types';
 
@@ -30,6 +31,7 @@ interface MesViewProps {
   onCreerOf: () => void;
   onGoToQuality?: (ofItem?: OrdreFabrication) => void;
   onGoToTraceability?: (lotNumber?: string) => void;
+  onGoToConnectivity?: () => void;
 }
 
 export const MesView: React.FC<MesViewProps> = ({
@@ -42,7 +44,8 @@ export const MesView: React.FC<MesViewProps> = ({
   onChangerStatutOf,
   onCreerOf,
   onGoToQuality,
-  onGoToTraceability
+  onGoToTraceability,
+  onGoToConnectivity
 }) => {
   const [activeSubTab, setActiveSubTab] = useState<'of' | 'declaration' | 'trs' | 'tracabilite'>('of');
   const [selectedLotForTrace, setSelectedLotForTrace] = useState<string>('LOT-VIR-2609-A1');
@@ -103,6 +106,16 @@ export const MesView: React.FC<MesViewProps> = ({
           </div>
 
           <div className="flex items-center space-x-2">
+            {onGoToConnectivity && (
+              <button
+                onClick={onGoToConnectivity}
+                className="flex items-center space-x-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-colors"
+                title="Superviser et configurer les machines opérationnelles de la ligne"
+              >
+                <Cpu className="w-4 h-4 text-sky-400" />
+                <span className="hidden sm:inline">Machines & Automates</span>
+              </button>
+            )}
             <button
               onClick={onCreerOf}
               className="flex items-center space-x-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-colors"

@@ -194,12 +194,12 @@ export const Navbar: React.FC<NavbarProps> = ({
               onClick={() => setActiveTab('connectivity')}
               className={`flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                 activeTab === 'connectivity'
-                  ? 'bg-sky-600 text-white shadow-sm'
+                  ? 'bg-sky-600 text-white shadow-sm font-semibold'
                   : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
               }`}
             >
-              <Cpu className="w-4 h-4" />
-              <span>Connectivité OPC UA</span>
+              <Cpu className="w-4 h-4 text-sky-400" />
+              <span>Connectivité Industrielle</span>
             </button>
 
             <button
@@ -371,9 +371,9 @@ export const Navbar: React.FC<NavbarProps> = ({
         </button>
         <button
           onClick={() => setActiveTab('connectivity')}
-          className={`px-3 py-1 rounded whitespace-nowrap ${activeTab === 'connectivity' ? 'bg-sky-600 text-white' : 'text-slate-400'}`}
+          className={`px-3 py-1 rounded whitespace-nowrap ${activeTab === 'connectivity' ? 'bg-sky-600 text-white font-semibold' : 'text-slate-400'}`}
         >
-          OPC UA
+          Connectivité Industrielle
         </button>
         <button
           onClick={() => setActiveTab('csharp')}
