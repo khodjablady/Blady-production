@@ -15,7 +15,7 @@ export interface DailyStockDataPoint {
   'EMB-BOUCH-SPRAY': number;
   'EMB-BID-5L': number;
   // Aggregated indicators
-  valeurTotaleStock: number; // €
+  valeurTotaleStock: number; // DA
   entreesVolume: number; // Inflows (L or Units received)
   sortiesVolume: number; // Outflows (consumed in MES + shipped)
   articlesSousSeuil: number;

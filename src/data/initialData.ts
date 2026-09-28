@@ -16,6 +16,7 @@ export const INITIAL_ARTICLES: Article[] = [
     capaciteVolumeLitres: 1.0,
     typeEmballage: 'Flacon PEHD 1L + Spray',
     prixUnitaireEstime: 4.85,
+    coutUnitaireStandard: 2.82,
     emplacement: 'Magasin Expéditions - Allée D04'
   },
   {
@@ -33,6 +34,7 @@ export const INITIAL_ARTICLES: Article[] = [
     capaciteVolumeLitres: 5.0,
     typeEmballage: 'Bidon Gerbable 5L PEHD',
     prixUnitaireEstime: 14.20,
+    coutUnitaireStandard: 8.65,
     emplacement: 'Magasin Expéditions - Allée D02'
   },
   {
@@ -50,6 +52,7 @@ export const INITIAL_ARTICLES: Article[] = [
     capaciteVolumeLitres: 10000,
     typeEmballage: 'Cuve Inox Stationnaire 10 000L',
     prixUnitaireEstime: 1.65,
+    coutUnitaireStandard: 1.65,
     emplacement: 'Parc Cuves MP - Cuve C-01'
   },
   {
@@ -67,6 +70,7 @@ export const INITIAL_ARTICLES: Article[] = [
     capaciteVolumeLitres: 1000,
     typeEmballage: 'IBC / GRV 1000L PEHD Palettisé',
     prixUnitaireEstime: 2.10,
+    coutUnitaireStandard: 2.10,
     emplacement: 'Zone Réactifs Chimiques - GRV-03'
   },
   {
@@ -84,6 +88,7 @@ export const INITIAL_ARTICLES: Article[] = [
     capaciteVolumeLitres: 1000,
     typeEmballage: 'Fût Acier 200L avec Bonde',
     prixUnitaireEstime: 3.40,
+    coutUnitaireStandard: 3.40,
     emplacement: 'Zone Matières Premières Fûts - Zone B'
   },
   {
@@ -101,6 +106,7 @@ export const INITIAL_ARTICLES: Article[] = [
     capaciteVolumeLitres: 25000,
     typeEmballage: 'Boucle Eau Osmosée Inox 316L',
     prixUnitaireEstime: 0.05,
+    coutUnitaireStandard: 0.05,
     emplacement: 'Génération Fluides - Boucle Principale'
   },
   {
@@ -116,6 +122,7 @@ export const INITIAL_ARTICLES: Article[] = [
     delaiLivraisonFournisseurJours: 6,
     typeEmballage: 'Palette Carton 1200 Unités',
     prixUnitaireEstime: 0.38,
+    coutUnitaireStandard: 0.38,
     emplacement: 'Magasin Emballages - Racks R-12'
   },
   {
@@ -131,6 +138,7 @@ export const INITIAL_ARTICLES: Article[] = [
     delaiLivraisonFournisseurJours: 6,
     typeEmballage: 'Carton vrac 500 Pièces',
     prixUnitaireEstime: 0.45,
+    coutUnitaireStandard: 0.45,
     emplacement: 'Magasin Emballages - Racks R-14'
   },
   {
@@ -146,7 +154,26 @@ export const INITIAL_ARTICLES: Article[] = [
     delaiLivraisonFournisseurJours: 4,
     typeEmballage: 'Bobine 1000 Étiquettes',
     prixUnitaireEstime: 0.08,
+    coutUnitaireStandard: 0.08,
     emplacement: 'Armoire Consommables Imprimerie'
+  },
+  {
+    id: 10,
+    code: 'PF-GEL-500',
+    designation: 'Gel Hydroalcoolique Flacon Pompe 500ml (Marché Public)',
+    stockTheorique: 380,
+    uniteMesure: 'U',
+    estComposant: false,
+    seuilCritique: 200,
+    quantiteStandardAchat: 400,
+    fournisseurParDefautId: undefined,
+    delaiLivraisonFournisseurJours: 0,
+    densite: 0.890,
+    capaciteVolumeLitres: 0.5,
+    typeEmballage: 'Flacon 500ml PEHD avec Pompe Doseuse',
+    prixUnitaireEstime: 4.40,
+    coutUnitaireStandard: 3.95, // 3.95 / 4.40 = 89.8% (> 85% threshold)
+    emplacement: 'Magasin Expéditions - Quai 03'
   }
 ];
 
@@ -218,6 +245,14 @@ export const INITIAL_COMMANDES_CLIENTS: CommandeClient[] = [
         quantiteCommandee: 800,
         quantiteDejaProduite: 350,
         prixUnitaire: 4.85
+      },
+      {
+        id: 104,
+        commandeClientId: 1,
+        articleId: 10,
+        quantiteCommandee: 600,
+        quantiteDejaProduite: 150,
+        prixUnitaire: 4.40
       }
     ]
   },

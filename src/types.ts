@@ -15,6 +15,7 @@ export interface Article {
   capaciteVolumeLitres?: number;
   typeEmballage?: string;
   prixUnitaireEstime?: number;
+  coutUnitaireStandard?: number;
   emplacement?: string;
 }
 

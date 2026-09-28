@@ -541,6 +541,40 @@ export default function App() {
     showNotification('Contrôle qualité retiré du registre.', 'info');
   };
 
+  // 9c. Article & Raw Material management
+  const handleSaveArticle = (
+    articleToSave: Article, 
+    ajustementStock?: { difference: number; motif: string }
+  ) => {
+    setArticles(prevArticles => {
+      const exists = prevArticles.some(a => a.id === articleToSave.id);
+      if (exists) {
+        return prevArticles.map(a => a.id === articleToSave.id ? articleToSave : a);
+      } else {
+        return [...prevArticles, articleToSave];
+      }
+    });
+
+    if (ajustementStock && ajustementStock.difference !== 0) {
+      const nouveauMouvement: MouvementStock = {
+        id: Date.now() + Math.floor(Math.random() * 1000),
+        articleId: articleToSave.id,
+        quantite: Math.abs(ajustementStock.difference),
+        typeMouvement: ajustementStock.difference > 0 ? 'Entree' : 'Sortie',
+        referenceDocument: `AJUST-INV-${new Date().toISOString().slice(0, 10)}`,
+        dateMouvement: new Date().toISOString(),
+        details: `Ajustement d'inventaire : ${ajustementStock.motif || 'Mise à jour fiche article'}`
+      };
+      setMouvementsStock(prev => [nouveauMouvement, ...prev]);
+      persistMouvementStock(nouveauMouvement, user?.uid);
+    }
+
+    showNotification(
+      `Fiche article ${articleToSave.code} (${articleToSave.designation}) enregistrée avec succès.`,
+      'success'
+    );
+  };
+
   // 10. Reset data
   const handleResetData = () => {
     setArticles(INITIAL_ARTICLES);
@@ -645,6 +679,7 @@ export default function App() {
             onLancerProductionDepuisVente={handleLancerProductionDepuisVente}
             onGoToTraceability={() => setActiveTab('traceability')}
             onGoToMes={() => setActiveTab('mes')}
+            onSaveArticle={handleSaveArticle}
           />
         )}
 
@@ -698,6 +733,7 @@ export default function App() {
           <AnalyticsView
             articles={articles}
             oee={oee}
+            commandesClients={commandesClients}
             onGoToErp={() => setActiveTab('erp')}
             onGoToMes={() => setActiveTab('mes')}
             onGoToCSharp={() => setActiveTab('csharp')}

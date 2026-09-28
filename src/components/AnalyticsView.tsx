@@ -18,10 +18,12 @@ import {
   PieChart,
   Pie
 } from 'recharts';
-import { Article, OeeMetrics } from '../types';
+import { Article, OeeMetrics, CommandeClient } from '../types';
 import { generate30DaysHistory, DailyStockDataPoint, DailyOeeDataPoint } from '../data/analyticsHistoryData';
+import { INITIAL_COMMANDES_CLIENTS } from '../data/initialData';
 import { OeeWeeklyEvolutionChart } from './OeeWeeklyEvolutionChart';
 import { PerformanceTrendPredictor } from './PerformanceTrendPredictor';
+import { ProductCostVsRevenueSection } from './ProductCostVsRevenueSection';
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -38,6 +40,7 @@ import {
   Sparkles,
   ArrowUpRight,
   ArrowDownRight,
+  ArrowRight,
   Maximize2,
   FileCode2
 } from 'lucide-react';
@@ -45,17 +48,19 @@ import {
 interface AnalyticsViewProps {
   articles: Article[];
   oee: OeeMetrics;
+  commandesClients?: CommandeClient[];
   onGoToErp?: () => void;
   onGoToMes?: () => void;
   onGoToCSharp?: () => void;
 }
 
 type PeriodDays = 7 | 14 | 30;
-type ViewCategory = 'all' | 'oee' | 'predictions' | 'stocks' | 'correlation';
+type ViewCategory = 'all' | 'oee' | 'predictions' | 'stocks' | 'costs' | 'correlation';
 
 export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
   articles,
   oee,
+  commandesClients,
   onGoToErp,
   onGoToMes,
   onGoToCSharp
@@ -64,6 +69,44 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<ViewCategory>('all');
   const [selectedArticleCode, setSelectedArticleCode] = useState<string>('MP-ETH-96');
   const [activeMetricTab, setActiveMetricTab] = useState<'trs' | 'pillars' | 'volume' | 'pareto'>('trs');
+  
+  // Cost overrun alert state (default 85% of selling price)
+  const [costThresholdPct, setCostThresholdPct] = useState<number>(85);
+  const [showTopCostAlert, setShowTopCostAlert] = useState<boolean>(true);
+
+  // Check for cost overrun alerts (cost >= threshold % of selling price)
+  const articlesWithCostAlert = useMemo(() => {
+    const cmds = commandesClients || INITIAL_COMMANDES_CLIENTS;
+    const result: { article: Article; ratio: number; coutStd: number; prixVente: number }[] = [];
+
+    articles.filter(a => !a.estComposant).forEach(art => {
+      let totalQty = 0;
+      let totalCA = 0;
+      cmds.forEach(cmd => {
+        cmd.lignes.forEach(l => {
+          if (l.articleId === art.id) {
+            totalQty += l.quantiteCommandee;
+            totalCA += (l.quantiteCommandee * l.prixUnitaire);
+          }
+        });
+      });
+
+      const coutStd = art.coutUnitaireStandard ?? art.prixUnitaireEstime ?? 0;
+      const prixVente = totalQty > 0 ? (totalCA / totalQty) : (art.prixUnitaireEstime ?? 0);
+      const ratio = prixVente > 0 ? (coutStd / prixVente) * 100 : 0;
+
+      if (ratio >= costThresholdPct) {
+        result.push({
+          article: art,
+          ratio,
+          coutStd,
+          prixVente
+        });
+      }
+    });
+
+    return result;
+  }, [articles, commandesClients, costThresholdPct]);
 
   // Generate historical data anchored to current state
   const { stockHistory, oeeHistory, lossPareto } = useMemo(() => {
@@ -209,7 +252,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
 
             <div className="text-[11px] text-slate-400 flex justify-between">
               <span>Valeur globale stock usine:</span>
-              <span className="font-mono text-sky-400">{data.valeurTotaleStock.toLocaleString()} €</span>
+              <span className="font-mono text-sky-400">{data.valeurTotaleStock.toLocaleString()} DA</span>
             </div>
 
             {data.entreesVolume > 0 && (
@@ -278,19 +321,25 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
                   { id: 'oee', label: 'MES (OEE / TRS)' },
                   { id: 'predictions', label: 'Prédictions J+3' },
                   { id: 'stocks', label: 'ERP (Stocks)' },
+                  { id: 'costs', label: 'Rentabilité & Coûts' },
                   { id: 'correlation', label: 'Corrélation' }
                 ] as { id: ViewCategory; label: string }[]
               ).map(cat => (
                 <button
                   key={cat.id}
                   onClick={() => setSelectedCategory(cat.id)}
-                  className={`px-3 py-1 rounded-lg font-medium transition-all ${
+                  className={`px-3 py-1 rounded-lg font-medium transition-all flex items-center gap-1.5 ${
                     selectedCategory === cat.id
                       ? 'bg-slate-800 text-sky-400 border border-slate-700 shadow-sm'
                       : 'text-slate-400 hover:text-slate-200'
                   }`}
                 >
-                  {cat.label}
+                  <span>{cat.label}</span>
+                  {cat.id === 'costs' && articlesWithCostAlert.length > 0 && (
+                    <span className="px-1.5 py-0.2 rounded-full bg-rose-500/25 text-rose-300 font-mono text-[10px] font-bold border border-rose-500/40 animate-pulse">
+                      {articlesWithCostAlert.length} ⚠️
+                    </span>
+                  )}
                 </button>
               ))}
             </div>
@@ -316,6 +365,47 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
           </div>
         </div>
       </div>
+
+      {/* TOP NOTIFICATION VISUELLE : ALERTE DÉPASSEMENT SEUIL COÛT DE REVIENT */}
+      {articlesWithCostAlert.length > 0 && showTopCostAlert && (
+        <div className="rounded-2xl border-2 border-rose-500/70 bg-gradient-to-r from-rose-950/80 via-rose-900/40 to-slate-950 p-4 shadow-xl shadow-rose-950/40 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs animate-in fade-in duration-300">
+          <div className="flex items-start space-x-3.5">
+            <div className="p-2.5 rounded-xl bg-rose-500/20 text-rose-300 border border-rose-500/40 shrink-0 animate-pulse">
+              <AlertTriangle className="w-5 h-5 text-rose-400" />
+            </div>
+            <div className="space-y-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-bold text-rose-200 text-sm">
+                  🚨 Alerte Rentabilité Industrielle : {articlesWithCostAlert.length} référence(s) dépasse(nt) le seuil de coût critique (≥ {costThresholdPct}% du prix de vente)
+                </span>
+                <span className="px-2 py-0.5 rounded-full bg-rose-500/30 text-rose-200 font-mono text-xs font-bold border border-rose-500/40">
+                  Seuil défini : {costThresholdPct}%
+                </span>
+              </div>
+              <p className="text-rose-200/80 text-[11px] leading-relaxed">
+                {articlesWithCostAlert.map(a => `${a.article.code} (${a.ratio.toFixed(1)}% du PV • Coût Std ${a.coutStd.toFixed(2)} DA / Vente ${a.prixVente.toFixed(2)} DA)`).join(' | ')}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-2 shrink-0 self-end md:self-auto">
+            <button
+              onClick={() => setSelectedCategory('costs')}
+              className="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-semibold text-xs transition-colors flex items-center space-x-1 shadow-sm"
+            >
+              <span>Inspecter dans Rentabilité & Coûts</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => setShowTopCostAlert(false)}
+              className="p-1 rounded text-slate-400 hover:text-slate-200 text-xs"
+              title="Fermer cette alerte"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* KPI Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -387,7 +477,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
           </div>
           <div className="mt-2 flex items-baseline justify-between">
             <div className="text-2xl font-bold font-mono text-white">
-              {currentValuation.toLocaleString()} €
+              {currentValuation.toLocaleString()} DA
             </div>
             <div className={`flex items-center text-xs font-medium ${Number(valuationDeltaPct) >= 0 ? 'text-emerald-400' : 'text-amber-400'}`}>
               {Number(valuationDeltaPct) >= 0 ? <ArrowUpRight className="w-3.5 h-3.5 mr-0.5" /> : <ArrowDownRight className="w-3.5 h-3.5 mr-0.5" />}
@@ -879,15 +969,15 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
               </div>
             </div>
 
-            {/* Graph 3: Total Stock Valuation (€) */}
+            {/* Graph 3: Total Stock Valuation (DA) */}
             <div className="space-y-2">
               <div className="flex items-center justify-between text-xs text-slate-300">
                 <span className="font-semibold flex items-center gap-1.5">
                   <Boxes className="w-3.5 h-3.5 text-indigo-400" />
-                  Valorisation Monétaire Globale des Stocks (€)
+                  Valorisation Monétaire Globale des Stocks (DA)
                 </span>
                 <span className="text-[11px] font-mono text-indigo-300">
-                  Actuel: {currentValuation.toLocaleString()} €
+                  Actuel: {currentValuation.toLocaleString()} DA
                 </span>
               </div>
               <div className="h-56 w-full">
@@ -901,9 +991,9 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.3} />
                     <XAxis dataKey="label" stroke="#94a3b8" fontSize={10} tickLine={false} />
-                    <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k€`} />
+                    <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k DA`} />
                     <Tooltip 
-                      formatter={(v: any) => [`${Number(v).toLocaleString()} €`, 'Valorisation Stock Totale']}
+                      formatter={(v: any) => [`${Number(v).toLocaleString()} DA`, 'Valorisation Stock Totale']}
                       contentStyle={{ backgroundColor: '#020617', borderColor: '#334155', borderRadius: '8px', fontSize: '11px' }} 
                     />
                     <Area type="monotone" dataKey="valeurTotaleStock" stroke="#818cf8" strokeWidth={2} fill="url(#colorValuation)" />
@@ -913,6 +1003,17 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* SECTION: RENTABILITÉ PRODUITS & CUMUL DES COÛTS DE REVIENT (Coût Standard vs Ventes Réelles) */}
+      {(selectedCategory === 'all' || selectedCategory === 'costs') && (
+        <ProductCostVsRevenueSection
+          articles={articles}
+          commandesClients={commandesClients || INITIAL_COMMANDES_CLIENTS}
+          costThresholdPct={costThresholdPct}
+          onCostThresholdChange={setCostThresholdPct}
+          onGoToErp={onGoToErp}
+        />
       )}
 
       {/* SECTION 3: CORRELATION ERP ⇄ MES ARCHITECTURE */}

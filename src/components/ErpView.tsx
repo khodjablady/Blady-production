@@ -16,9 +16,12 @@ import {
   Building2,
   Calendar,
   CheckCircle2,
-  GitFork
+  GitFork,
+  Edit3,
+  Calculator
 } from 'lucide-react';
 import { Article, Nomenclature, CommandeClient, SuggestionAchat, BonReception, MouvementStock } from '../types';
+import { ArticleModal } from './ArticleModal';
 
 interface ErpViewProps {
   articles: Article[];
@@ -33,6 +36,7 @@ interface ErpViewProps {
   onLancerProductionDepuisVente: (commandeId: number, ligneId: number) => void;
   onGoToTraceability?: (lotNumber?: string) => void;
   onGoToMes?: () => void;
+  onSaveArticle?: (article: Article, ajustementStock?: { difference: number; motif: string }) => void;
 }
 
 export const ErpView: React.FC<ErpViewProps> = ({
@@ -47,11 +51,14 @@ export const ErpView: React.FC<ErpViewProps> = ({
   onCreerBonReception,
   onLancerProductionDepuisVente,
   onGoToTraceability,
-  onGoToMes
+  onGoToMes,
+  onSaveArticle
 }) => {
   const [activeSubTab, setActiveSubTab] = useState<'articles' | 'nomenclatures' | 'ventes' | 'achats' | 'receptions' | 'mouvements'>('articles');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'mp' | 'pf'>('all');
+  const [isArticleModalOpen, setIsArticleModalOpen] = useState(false);
+  const [selectedArticleToEdit, setSelectedArticleToEdit] = useState<Article | undefined>(undefined);
 
   const filteredArticles = articles.filter(a => {
     const matchesSearch = a.code.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -155,6 +162,65 @@ export const ErpView: React.FC<ErpViewProps> = ({
       {/* Tab 1: Articles */}
       {activeSubTab === 'articles' && (
         <div className="space-y-4">
+          {/* Cost of Goods & Stock Valuation Summary Bar */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between">
+              <div className="space-y-0.5">
+                <span className="text-[11px] font-medium text-slate-400">Valeur Totale du Stock (Std)</span>
+                <div className="text-base font-bold font-mono text-emerald-400">
+                  {articles
+                    .reduce((acc, a) => acc + (a.stockTheorique * (a.coutUnitaireStandard ?? a.prixUnitaireEstime ?? 0)), 0)
+                    .toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} DA
+                </div>
+              </div>
+              <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                <Calculator className="w-4 h-4" />
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between">
+              <div className="space-y-0.5">
+                <span className="text-[11px] font-medium text-slate-400">Stock Matières Premières</span>
+                <div className="text-base font-bold font-mono text-sky-400">
+                  {articles
+                    .filter(a => a.estComposant)
+                    .reduce((acc, a) => acc + (a.stockTheorique * (a.coutUnitaireStandard ?? a.prixUnitaireEstime ?? 0)), 0)
+                    .toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} DA
+                </div>
+              </div>
+              <div className="p-2 rounded-lg bg-sky-500/10 text-sky-400 border border-sky-500/20">
+                <Boxes className="w-4 h-4" />
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between">
+              <div className="space-y-0.5">
+                <span className="text-[11px] font-medium text-slate-400">Stock Produits Finis</span>
+                <div className="text-base font-bold font-mono text-indigo-400">
+                  {articles
+                    .filter(a => !a.estComposant)
+                    .reduce((acc, a) => acc + (a.stockTheorique * (a.coutUnitaireStandard ?? a.prixUnitaireEstime ?? 0)), 0)
+                    .toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} DA
+                </div>
+              </div>
+              <div className="p-2 rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                <Layers className="w-4 h-4" />
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between">
+              <div className="space-y-0.5">
+                <span className="text-[11px] font-medium text-slate-400">Articles avec Coût Standard</span>
+                <div className="text-base font-bold font-mono text-white">
+                  {articles.filter(a => a.coutUnitaireStandard !== undefined).length} / {articles.length}
+                </div>
+              </div>
+              <div className="p-2 rounded-lg bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                <FileText className="w-4 h-4" />
+              </div>
+            </div>
+          </div>
+
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-slate-900/60 p-3 rounded-xl border border-slate-800">
             <div className="relative flex-1 max-w-sm">
               <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
@@ -167,25 +233,40 @@ export const ErpView: React.FC<ErpViewProps> = ({
               />
             </div>
 
-            <div className="flex items-center space-x-1 text-xs">
-              <button
-                onClick={() => setFilterType('all')}
-                className={`px-2.5 py-1 rounded ${filterType === 'all' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-slate-200'}`}
-              >
-                Tous ({articles.length})
-              </button>
-              <button
-                onClick={() => setFilterType('mp')}
-                className={`px-2.5 py-1 rounded ${filterType === 'mp' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-slate-200'}`}
-              >
-                Matières & Composants ({articles.filter(a => a.estComposant).length})
-              </button>
-              <button
-                onClick={() => setFilterType('pf')}
-                className={`px-2.5 py-1 rounded ${filterType === 'pf' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-slate-200'}`}
-              >
-                Produits Finis ({articles.filter(a => !a.estComposant).length})
-              </button>
+            <div className="flex items-center flex-wrap gap-2 text-xs">
+              <div className="flex items-center space-x-1">
+                <button
+                  onClick={() => setFilterType('all')}
+                  className={`px-2.5 py-1 rounded ${filterType === 'all' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-slate-200'}`}
+                >
+                  Tous ({articles.length})
+                </button>
+                <button
+                  onClick={() => setFilterType('mp')}
+                  className={`px-2.5 py-1 rounded ${filterType === 'mp' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-slate-200'}`}
+                >
+                  Matières & Composants ({articles.filter(a => a.estComposant).length})
+                </button>
+                <button
+                  onClick={() => setFilterType('pf')}
+                  className={`px-2.5 py-1 rounded ${filterType === 'pf' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-slate-200'}`}
+                >
+                  Produits Finis ({articles.filter(a => !a.estComposant).length})
+                </button>
+              </div>
+
+              {onSaveArticle && (
+                <button
+                  onClick={() => {
+                    setSelectedArticleToEdit(undefined);
+                    setIsArticleModalOpen(true);
+                  }}
+                  className="flex items-center space-x-1.5 px-3 py-1 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-semibold text-xs shadow-sm transition-colors ml-auto sm:ml-0"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Nouvel Article / Matière</span>
+                </button>
+              )}
             </div>
           </div>
 
@@ -197,16 +278,22 @@ export const ErpView: React.FC<ErpViewProps> = ({
                     <th className="p-3">Code / Article</th>
                     <th className="p-3">Type</th>
                     <th className="p-3 text-right">Stock Théorique</th>
+                    <th className="p-3 text-right">Coût Unitaire Std</th>
+                    <th className="p-3 text-right">Valo. Stock (Std)</th>
                     <th className="p-3 text-right">Seuil Critique</th>
                     <th className="p-3 text-right">Qté Std Achat</th>
-                    <th className="p-3">Spécificités Liquides (Densité / Vol)</th>
+                    <th className="p-3">Spécificités Liquides</th>
                     <th className="p-3">Emplacement / Emballage</th>
                     <th className="p-3">Statut Stock</th>
+                    <th className="p-3 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/80 text-slate-300">
                   {filteredArticles.map(article => {
                     const isBelowCritical = article.stockTheorique < article.seuilCritique;
+                    const coutStd = article.coutUnitaireStandard ?? article.prixUnitaireEstime;
+                    const valeurStock = coutStd !== undefined ? article.stockTheorique * coutStd : undefined;
+
                     return (
                       <tr key={article.id} className="hover:bg-slate-800/40 transition-colors">
                         <td className="p-3">
@@ -224,6 +311,26 @@ export const ErpView: React.FC<ErpViewProps> = ({
                         </td>
                         <td className="p-3 text-right font-mono font-bold text-white">
                           {article.stockTheorique.toLocaleString('fr-FR')} {article.uniteMesure}
+                        </td>
+                        <td className="p-3 text-right font-mono">
+                          {article.coutUnitaireStandard !== undefined ? (
+                            <span className="text-indigo-300 font-bold">
+                              {article.coutUnitaireStandard.toFixed(4)} DA
+                            </span>
+                          ) : article.prixUnitaireEstime !== undefined ? (
+                            <span className="text-slate-400 italic text-[11px]">
+                              ~{article.prixUnitaireEstime.toFixed(2)} DA (est.)
+                            </span>
+                          ) : (
+                            <span className="text-slate-600">—</span>
+                          )}
+                        </td>
+                        <td className="p-3 text-right font-mono font-bold text-emerald-400">
+                          {valeurStock !== undefined ? (
+                            `${valeurStock.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} DA`
+                          ) : (
+                            <span className="text-slate-600 font-normal">—</span>
+                          )}
                         </td>
                         <td className="p-3 text-right font-mono text-slate-400">
                           {article.seuilCritique.toLocaleString('fr-FR')} {article.uniteMesure}
@@ -244,8 +351,8 @@ export const ErpView: React.FC<ErpViewProps> = ({
                           )}
                         </td>
                         <td className="p-3 text-[11px]">
-                          <div className="text-slate-300 truncate max-w-[180px]">{article.typeEmballage || '—'}</div>
-                          <div className="text-slate-500 text-[10px] truncate max-w-[180px]">{article.emplacement}</div>
+                          <div className="text-slate-300 truncate max-w-[150px]">{article.typeEmballage || '—'}</div>
+                          <div className="text-slate-500 text-[10px] truncate max-w-[150px]">{article.emplacement}</div>
                         </td>
                         <td className="p-3">
                           {isBelowCritical ? (
@@ -258,6 +365,21 @@ export const ErpView: React.FC<ErpViewProps> = ({
                               <Check className="w-3.5 h-3.5 flex-shrink-0" />
                               <span>Conforme</span>
                             </span>
+                          )}
+                        </td>
+                        <td className="p-3 text-right">
+                          {onSaveArticle && (
+                            <button
+                              onClick={() => {
+                                setSelectedArticleToEdit(article);
+                                setIsArticleModalOpen(true);
+                              }}
+                              className="px-2.5 py-1 bg-slate-800 hover:bg-sky-600 text-slate-300 hover:text-white rounded-lg transition-colors inline-flex items-center space-x-1"
+                              title={`Modifier la fiche de ${article.code}`}
+                            >
+                              <Edit3 className="w-3.5 h-3.5" />
+                              <span className="text-[11px] font-medium hidden sm:inline">Modifier</span>
+                            </button>
                           )}
                         </td>
                       </tr>
@@ -304,6 +426,8 @@ export const ErpView: React.FC<ErpViewProps> = ({
                     <th className="p-3 text-right">Besoin Unitaire Théorique</th>
                     <th className="p-3 text-right">Perte Tolérable (%)</th>
                     <th className="p-3 text-right">Besoin Réel Effectif</th>
+                    <th className="p-3 text-right">Coût Std Composant</th>
+                    <th className="p-3 text-right">Part Coût Revient</th>
                     <th className="p-3 text-right">Stock Actuel Composant</th>
                   </tr>
                 </thead>
@@ -312,6 +436,8 @@ export const ErpView: React.FC<ErpViewProps> = ({
                     const comp = articles.find(a => a.id === nom.composantId);
                     const facteur = 1 + (nom.pourcentagePerteTolerable / 100);
                     const besoinReel = nom.quantiteBesoinUnitaire * facteur;
+                    const coutComp = comp?.coutUnitaireStandard ?? comp?.prixUnitaireEstime ?? 0;
+                    const partCout = besoinReel * coutComp;
 
                     return (
                       <tr key={nom.id} className="hover:bg-slate-800/40">
@@ -328,6 +454,12 @@ export const ErpView: React.FC<ErpViewProps> = ({
                         <td className="p-3 text-right font-mono font-bold text-white">
                           {besoinReel.toFixed(4)} {comp?.uniteMesure}
                         </td>
+                        <td className="p-3 text-right font-mono text-indigo-300">
+                          {coutComp > 0 ? `${coutComp.toFixed(4)} DA` : '—'}
+                        </td>
+                        <td className="p-3 text-right font-mono font-bold text-emerald-400">
+                          {partCout.toFixed(4)} DA
+                        </td>
                         <td className="p-3 text-right font-mono text-slate-400">
                           {comp?.stockTheorique} {comp?.uniteMesure}
                         </td>
@@ -335,6 +467,23 @@ export const ErpView: React.FC<ErpViewProps> = ({
                     );
                   })}
                 </tbody>
+                <tfoot className="bg-slate-950/90 font-semibold border-t border-slate-700 text-xs">
+                  <tr>
+                    <td colSpan={6} className="p-3 text-right text-slate-300">
+                      Coût Matières & Emballages Cumulé (BOM) :
+                    </td>
+                    <td className="p-3 text-right font-mono font-bold text-emerald-400 text-sm">
+                      {nomenclatures.reduce((total, nom) => {
+                        const comp = articles.find(a => a.id === nom.composantId);
+                        const facteur = 1 + (nom.pourcentagePerteTolerable / 100);
+                        const besoinReel = nom.quantiteBesoinUnitaire * facteur;
+                        const coutComp = comp?.coutUnitaireStandard ?? comp?.prixUnitaireEstime ?? 0;
+                        return total + (besoinReel * coutComp);
+                      }, 0).toFixed(4)} DA
+                    </td>
+                    <td className="p-3 text-[11px] text-slate-500">par flacon fini</td>
+                  </tr>
+                </tfoot>
               </table>
             </div>
           </div>
@@ -382,7 +531,18 @@ export const ErpView: React.FC<ErpViewProps> = ({
                       <div key={ligne.id} className="flex flex-col md:flex-row md:items-center justify-between p-3 rounded-lg bg-slate-950/60 border border-slate-800 text-xs gap-3">
                         <div className="space-y-0.5">
                           <div className="font-bold text-white font-mono">{article?.code} - {article?.designation}</div>
-                          <div className="text-slate-400">Prix unitaire: {ligne.prixUnitaire} € | Total: {(ligne.prixUnitaire * ligne.quantiteCommandee).toFixed(2)} €</div>
+                          <div className="text-slate-400 flex flex-wrap items-center gap-x-3 gap-y-1">
+                            <span>Prix vente: <strong className="text-white">{ligne.prixUnitaire} DA</strong></span>
+                            {article?.coutUnitaireStandard !== undefined && (
+                              <span>Coût std: <strong className="text-indigo-300">{article.coutUnitaireStandard.toFixed(2)} DA</strong></span>
+                            )}
+                            {article?.coutUnitaireStandard !== undefined && (
+                              <span className={`font-semibold ${ligne.prixUnitaire >= article.coutUnitaireStandard ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                Marge: +{(ligne.prixUnitaire - article.coutUnitaireStandard).toFixed(2)} DA / U ({(((ligne.prixUnitaire - article.coutUnitaireStandard) / ligne.prixUnitaire) * 100).toFixed(1)}%)
+                              </span>
+                            )}
+                            <span>Total Vente: <strong className="text-white">{(ligne.prixUnitaire * ligne.quantiteCommandee).toFixed(2)} DA</strong></span>
+                          </div>
                         </div>
 
                         <div className="flex items-center space-x-4">
@@ -629,6 +789,20 @@ export const ErpView: React.FC<ErpViewProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Article Creation & Editing Modal */}
+      {isArticleModalOpen && onSaveArticle && (
+        <ArticleModal
+          isOpen={isArticleModalOpen}
+          onClose={() => {
+            setIsArticleModalOpen(false);
+            setSelectedArticleToEdit(undefined);
+          }}
+          articleToEdit={selectedArticleToEdit}
+          onSave={onSaveArticle}
+          existingCodes={articles.map(a => a.code)}
+        />
       )}
 
     </div>
