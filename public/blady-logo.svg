@@ -1,0 +1,142 @@
+<svg viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="goldRimGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#eed283" />
+      <stop offset="25%" stop-color="#bf9337" />
+      <stop offset="50%" stop-color="#fff2be" />
+      <stop offset="75%" stop-color="#9e721d" />
+      <stop offset="100%" stop-color="#d8ab48" />
+    </linearGradient>
+
+    <radialGradient id="goldRadialGrad" cx="50%" cy="45%" r="50%">
+      <stop offset="0%" stop-color="#fff8d6" />
+      <stop offset="40%" stop-color="#dfb752" />
+      <stop offset="80%" stop-color="#a37822" />
+      <stop offset="100%" stop-color="#7a5511" />
+    </radialGradient>
+
+    <linearGradient id="oliveLeafGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#9e721d" />
+      <stop offset="50%" stop-color="#dfb752" />
+      <stop offset="100%" stop-color="#fff2be" />
+    </linearGradient>
+
+    <linearGradient id="innerBgGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#faf7ed" />
+      <stop offset="100%" stop-color="#f3ecdb" />
+    </linearGradient>
+
+    <path id="topArcSnc" d="M 82,250 A 168,168 0 0,1 418,250" fill="none" />
+    <path id="topArcSub" d="M 112,250 A 138,138 0 0,1 388,250" fill="none" />
+    <path id="bottomArcOperated" d="M 414,250 A 164,164 0 0,1 86,250" fill="none" />
+
+    <filter id="medalShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#000000" flood-opacity="0.35" />
+    </filter>
+  </defs>
+
+  <!-- TOP CROWN LEAVES -->
+  <g id="topCrownLeaves" fill="url(#oliveLeafGrad)">
+    <path d="M 250,58 C 248,32 238,20 250,14 C 262,20 252,32 250,58 Z" />
+    <path d="M 246,55 C 230,42 208,35 204,26 C 218,24 235,36 246,55 Z" />
+    <path d="M 242,62 C 220,54 195,50 186,42 C 200,38 222,46 242,62 Z" />
+    <path d="M 238,70 C 210,66 182,68 170,62 C 182,54 210,58 238,70 Z" />
+    <path d="M 232,80 C 200,80 172,86 160,82 C 170,72 200,72 232,80 Z" />
+    <path d="M 224,94 C 192,98 168,108 156,104 C 164,94 194,90 224,94 Z" />
+    <path d="M 254,55 C 270,42 292,35 296,26 C 282,24 265,36 254,55 Z" />
+    <path d="M 258,62 C 280,54 305,50 314,42 C 300,38 278,46 258,62 Z" />
+    <path d="M 262,70 C 290,66 318,68 330,62 C 318,54 290,58 262,70 Z" />
+    <path d="M 268,80 C 300,80 328,86 340,82 C 330,72 300,72 268,80 Z" />
+    <path d="M 276,94 C 308,98 332,108 344,104 C 336,94 306,90 276,94 Z" />
+    <circle cx="250" cy="56" r="3.5" fill="#ffffff" opacity="0.9" />
+  </g>
+
+  <!-- MEDAL BODY -->
+  <g filter="url(#medalShadow)">
+    <circle cx="250" cy="250" r="198" fill="url(#goldRimGrad)" stroke="#7a5511" stroke-width="2" />
+    <circle cx="250" cy="250" r="192" fill="none" stroke="#fff7d6" stroke-width="2.5" opacity="0.75" />
+    <circle cx="250" cy="250" r="185" fill="url(#goldRadialGrad)" />
+    <circle cx="250" cy="250" r="138" fill="none" stroke="#68470a" stroke-width="2.5" />
+    <circle cx="250" cy="250" r="135" fill="none" stroke="#ffe599" stroke-width="1.5" />
+    <circle cx="250" cy="250" r="133" fill="url(#innerBgGrad)" />
+  </g>
+
+  <!-- TEXT -->
+  <g fill="#433008" font-family="'Cinzel', 'Playfair Display', Georgia, serif">
+    <text font-size="29" font-weight="900" letter-spacing="3.5">
+      <textPath href="#topArcSnc" startOffset="50%" text-anchor="middle">SNC KHODJA &amp; CO.</textPath>
+    </text>
+    <text font-size="13" font-weight="800" letter-spacing="2.8" fill="#543e0a">
+      <textPath href="#topArcSub" startOffset="50%" text-anchor="middle">SUSTAINABLE CULINARY HERITAGE</textPath>
+    </text>
+    <text font-size="17.5" font-weight="900" letter-spacing="3" fill="#433008">
+      <textPath href="#bottomArcOperated" startOffset="50%" text-anchor="middle">LOCALLY OWNED AND OPERATED</textPath>
+    </text>
+  </g>
+
+  <!-- STARS -->
+  <polygon points="70,250 74,242 83,242 76,247 79,255 70,250 62,255 65,247 58,242 67,242" fill="#433008" stroke="#ffd56b" stroke-width="0.8" />
+  <polygon points="430,250 434,242 443,242 436,247 439,255 430,250 422,255 425,247 418,242 427,242" fill="#433008" stroke="#ffd56b" stroke-width="0.8" />
+
+  <!-- TREE & CENTER -->
+  <g id="centerpiece">
+    <path d="M 124,332 C 160,320 210,314 250,314 C 290,314 340,320 376,332 A 133,133 0 0,1 124,332 Z" fill="#586b20" />
+    <g fill="#586b20">
+      <path d="M 235,315 C 233,285 240,265 230,245 C 220,230 205,215 190,205 C 196,204 205,208 214,215 C 224,223 234,238 238,248 C 242,230 248,220 252,215 C 256,220 262,230 266,248 C 270,238 280,223 290,215 C 299,208 308,204 314,205 C 299,215 284,230 274,245 C 264,265 271,285 269,315 Z" />
+      <circle cx="165" cy="200" r="28" />
+      <circle cx="185" cy="180" r="26" />
+      <circle cx="150" cy="225" r="22" />
+      <circle cx="170" cy="235" r="24" />
+      <circle cx="195" cy="225" r="20" />
+      <circle cx="140" cy="205" r="18" />
+      <circle cx="215" cy="165" r="28" />
+      <circle cx="245" cy="155" r="32" />
+      <circle cx="275" cy="158" r="28" />
+      <circle cx="230" cy="145" r="22" />
+      <circle cx="265" cy="142" r="24" />
+      <circle cx="250" cy="135" r="20" />
+      <circle cx="315" cy="175" r="26" />
+      <circle cx="335" cy="195" r="28" />
+      <circle cx="310" cy="220" r="24" />
+      <circle cx="345" cy="225" r="20" />
+      <circle cx="360" cy="210" r="18" />
+      <circle cx="330" cy="235" r="22" />
+    </g>
+
+    <!-- Two Olives -->
+    <path d="M 250,225 Q 248,235 244,242" stroke="#485918" stroke-width="2" fill="none" />
+    <path d="M 250,225 Q 252,235 256,242" stroke="#485918" stroke-width="2" fill="none" />
+    <ellipse cx="242" cy="222" rx="4" ry="11" transform="rotate(-50 242 222)" fill="#78932b" />
+    <ellipse cx="258" cy="222" rx="4" ry="11" transform="rotate(50 258 222)" fill="#78932b" />
+    <ellipse cx="243" cy="245" rx="6.5" ry="9.5" fill="#2b2326" />
+    <ellipse cx="257" cy="245" rx="6.5" ry="9.5" fill="#7d962d" />
+
+    <!-- Arabic Script بلادي -->
+    <text x="250" y="172" text-anchor="middle" font-family="'Amiri', 'Traditional Arabic', serif" font-size="26" font-weight="bold" fill="#edd68b" stroke="#3b4812" stroke-width="0.8">
+      بلادي
+    </text>
+
+    <!-- English Script Blady -->
+    <text x="248" y="210" text-anchor="middle" font-family="'Brush Script MT', 'Dancing Script', cursive, serif" font-size="48" font-weight="bold" font-style="italic" fill="#eed78e" stroke="#3a4812" stroke-width="1.2">
+      Blady
+    </text>
+
+    <!-- Farmer with pole -->
+    <g fill="#586b20">
+      <circle cx="180" cy="266" r="6" />
+      <path d="M 174,272 L 186,272 L 184,295 L 176,295 Z" />
+      <line x1="170" y1="316" x2="216" y2="225" stroke="#3d4a13" stroke-width="2.8" stroke-linecap="round" />
+      <path d="M 176,295 L 173,322 L 169,324" stroke="#586b20" stroke-width="4" fill="none" stroke-linecap="round" />
+      <path d="M 184,295 L 187,322 L 193,323" stroke="#586b20" stroke-width="4" fill="none" stroke-linecap="round" />
+    </g>
+
+    <!-- Baskets & Harvester on right -->
+    <g fill="#586b20">
+      <path d="M 278,310 L 291,310 L 289,324 L 280,324 Z" />
+      <path d="M 298,312 L 311,312 L 309,325 L 300,325 Z" />
+      <circle cx="334" cy="304" r="5" />
+      <path d="M 330,307 Q 324,312 320,317 L 317,322" stroke="#586b20" stroke-width="4.5" fill="none" stroke-linecap="round" />
+      <path d="M 320,317 Q 328,318 333,325" stroke="#586b20" stroke-width="3.5" fill="none" stroke-linecap="round" />
+    </g>
+  </g>
+</svg>

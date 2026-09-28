@@ -33,7 +33,11 @@ import {
   Flame,
   Filter,
   Eye,
-  Info
+  Info,
+  ChevronDown,
+  ChevronRight,
+  Table,
+  LayoutGrid
 } from 'lucide-react';
 
 interface ProductCostVsRevenueSectionProps {
@@ -58,6 +62,30 @@ export const ProductCostVsRevenueSection: React.FC<ProductCostVsRevenueSectionPr
   const [costThreshold, setCostThreshold] = useState<number>(initialThreshold);
   const [filterAlertsOnly, setFilterAlertsOnly] = useState<boolean>(false);
   const [isAlertBannerDismissed, setIsAlertBannerDismissed] = useState<boolean>(false);
+  
+  // State for Customer Orders Table layout and row expansion
+  const [expandedOrderIds, setExpandedOrderIds] = useState<Set<number>>(new Set([1, 2]));
+  const [orderLayout, setOrderLayout] = useState<'table' | 'cards'>('table');
+
+  const toggleOrderExpanded = (id: number) => {
+    setExpandedOrderIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const toggleAllOrdersExpanded = () => {
+    if (expandedOrderIds.size === filteredCommandes.length) {
+      setExpandedOrderIds(new Set());
+    } else {
+      setExpandedOrderIds(new Set(filteredCommandes.map(c => c.id)));
+    }
+  };
 
   const handleThresholdChange = (val: number) => {
     const clamped = Math.max(10, Math.min(100, val));
@@ -239,6 +267,91 @@ export const ProductCostVsRevenueSection: React.FC<ProductCostVsRevenueSectionPr
 
   const PIE_COLORS = ['#38bdf8', '#818cf8', '#34d399', '#f59e0b', '#ec4899'];
 
+  // Comprehensive customer orders profitability analysis (dynamic gross margin)
+  const ordersProfitability = useMemo(() => {
+    return filteredCommandes.map(cmd => {
+      let cmdCA = 0;
+      let cmdCoutStd = 0;
+      let totalQty = 0;
+
+      const lignesDetail = cmd.lignes.map(l => {
+        const art = articles.find(a => a.id === l.articleId);
+        const coutStd = art?.coutUnitaireStandard ?? art?.prixUnitaireEstime ?? 0;
+        const totalLigneCA = l.quantiteCommandee * l.prixUnitaire;
+        const totalLigneCout = l.quantiteCommandee * coutStd;
+        // Dynamic Gross Margin for the line: Prix Vente Total - Coût Standard Total
+        const margeLigne = totalLigneCA - totalLigneCout;
+        const tauxLigne = totalLigneCA > 0 ? (margeLigne / totalLigneCA) * 100 : 0;
+        const ratioLigne = totalLigneCA > 0 ? (totalLigneCout / totalLigneCA) * 100 : 0;
+        const isLigneOver = ratioLigne >= costThreshold;
+        const margeUnitaire = l.prixUnitaire - coutStd;
+
+        cmdCA += totalLigneCA;
+        cmdCoutStd += totalLigneCout;
+        totalQty += l.quantiteCommandee;
+
+        return {
+          ...l,
+          article: art,
+          coutStd,
+          totalLigneCA,
+          totalLigneCout,
+          margeLigne,
+          margeUnitaire,
+          tauxLigne,
+          ratioLigne,
+          isLigneOver
+        };
+      });
+
+      // Dynamic Gross Margin for the entire order: Prix de Vente Total (CA) - Coût de Revient Standard Total
+      const cmdMarge = cmdCA - cmdCoutStd;
+      const cmdTauxMarge = cmdCA > 0 ? (cmdMarge / cmdCA) * 100 : 0;
+      const cmdRatio = cmdCA > 0 ? (cmdCoutStd / cmdCA) * 100 : 0;
+      const isCmdOver = cmdRatio >= costThreshold;
+      const margeMoyenneUnitaire = totalQty > 0 ? cmdMarge / totalQty : 0;
+
+      return {
+        ...cmd,
+        totalQty,
+        cmdCA,
+        cmdCoutStd,
+        cmdMarge,
+        cmdTauxMarge,
+        cmdRatio,
+        isCmdOver,
+        margeMoyenneUnitaire,
+        lignesDetail
+      };
+    });
+  }, [filteredCommandes, articles, costThreshold]);
+
+  // Aggregate totals across all customer orders
+  const ordersTotals = useMemo(() => {
+    let totalCA = 0;
+    let totalCoutStd = 0;
+    let totalQty = 0;
+
+    ordersProfitability.forEach(o => {
+      totalCA += o.cmdCA;
+      totalCoutStd += o.cmdCoutStd;
+      totalQty += o.totalQty;
+    });
+
+    const totalMarge = totalCA - totalCoutStd;
+    const tauxMarge = totalCA > 0 ? (totalMarge / totalCA) * 100 : 0;
+    const ratioGlobal = totalCA > 0 ? (totalCoutStd / totalCA) * 100 : 0;
+
+    return {
+      totalCA,
+      totalCoutStd,
+      totalMarge,
+      tauxMarge,
+      totalQty,
+      ratioGlobal
+    };
+  }, [ordersProfitability]);
+
   return (
     <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-lg space-y-5">
       {/* Header */}
@@ -339,13 +452,16 @@ export const ProductCostVsRevenueSection: React.FC<ProductCostVsRevenueSectionPr
             </button>
             <button
               onClick={() => setDisplayMode('commandes')}
-              className={`px-3 py-1 rounded-lg font-medium transition-all ${
+              className={`px-3 py-1 rounded-lg font-medium transition-all flex items-center gap-1.5 ${
                 displayMode === 'commandes'
                   ? 'bg-indigo-600 text-white shadow-sm'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              Détail par Commande
+              <span>Tableau Commandes</span>
+              <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/25 text-emerald-200 font-mono">
+                Marge Brute
+              </span>
             </button>
           </div>
         </div>
@@ -975,61 +1091,338 @@ export const ProductCostVsRevenueSection: React.FC<ProductCostVsRevenueSectionPr
         </div>
       )}
 
-      {/* Mode 3: Detailed Breakdown by Customer Order */}
+      {/* Mode 3: Detailed Breakdown by Customer Order - TABLEAU RÉCAPITULATIF DES COMMANDES */}
       {displayMode === 'commandes' && (
         <div className="space-y-4">
-          <div className="bg-slate-950 px-4 py-2.5 rounded-xl border border-slate-800 flex items-center justify-between text-xs">
-            <span className="font-semibold text-white flex items-center gap-2">
-              <Building2 className="w-4 h-4 text-sky-400" />
-              <span>Analyse de Rentabilité Contrat par Contrat (Commandes Clients)</span>
-            </span>
-            <span className="text-slate-400 font-mono text-[11px]">
-              {filteredCommandes.length} commande(s) filtrée(s)
-            </span>
+          <div className="bg-slate-950 px-4 py-3 rounded-xl border border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs">
+            <div className="flex items-center space-x-2.5">
+              <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                <Table className="w-4 h-4" />
+              </div>
+              <div>
+                <span className="font-semibold text-white flex items-center gap-2">
+                  <span>Tableau Récapitulatif par Commande Client</span>
+                  <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-mono text-[10px] border border-emerald-500/30 font-bold">
+                    Colonne 'Marge Brute' Dynamique
+                  </span>
+                </span>
+                <p className="text-[11px] text-slate-400 mt-0.5">
+                  Calcul dynamique de la Marge Brute = Prix de Vente Total (CA) - Coût de Revient Standard pour chaque commande client.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={toggleAllOrdersExpanded}
+                className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 text-[11px] font-mono transition-colors"
+              >
+                {expandedOrderIds.size === filteredCommandes.length ? 'Tout replier' : 'Tout déplier'}
+              </button>
+
+              <div className="flex items-center bg-slate-900 p-0.5 rounded-lg border border-slate-800">
+                <button
+                  onClick={() => setOrderLayout('table')}
+                  className={`p-1.5 rounded ${orderLayout === 'table' ? 'bg-slate-800 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200'}`}
+                  title="Vue Tableau Récapitulatif"
+                >
+                  <Table className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => setOrderLayout('cards')}
+                  className={`p-1.5 rounded ${orderLayout === 'cards' ? 'bg-slate-800 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200'}`}
+                  title="Vue Cartes Détaillées"
+                >
+                  <LayoutGrid className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              <span className="text-slate-400 font-mono text-[11px]">
+                {ordersProfitability.length} commande(s)
+              </span>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-4">
-            {filteredCommandes.map(cmd => {
-              // Compute order-level totals
-              let cmdCA = 0;
-              let cmdCoutStd = 0;
+          {orderLayout === 'table' ? (
+            /* TABLEAU RÉCAPITULATIF DES COMMANDES CLIENTS AVEC COLONNE MARGE BRUTE */
+            <div className="border border-slate-800 rounded-xl overflow-hidden shadow-lg">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-950 text-slate-300 font-mono text-[11px] border-b border-slate-800">
+                    <tr>
+                      <th className="p-3 w-8"></th>
+                      <th className="p-3">N° Commande & Date</th>
+                      <th className="p-3">Client & Statut</th>
+                      <th className="p-3 text-right">Volume Commandé</th>
+                      <th className="p-3 text-right">Coût Revient Std (DA)</th>
+                      <th className="p-3 text-right">Prix de Vente Total (DA)</th>
+                      {/* COLONNE MARGE BRUTE DÉDIÉE ET MISE EN AVANT */}
+                      <th className="p-3 text-right bg-emerald-950/40 text-emerald-300 font-bold border-x border-emerald-800/40">
+                        <div className="flex flex-col items-end">
+                          <span className="flex items-center gap-1">
+                            <span>Marge Brute</span>
+                            <span className="text-emerald-400 font-sans text-[10px]">✨</span>
+                          </span>
+                          <span className="text-[9px] font-sans text-emerald-400/80 font-normal">
+                            (Prix Vente - Coût Std)
+                          </span>
+                        </div>
+                      </th>
+                      <th className="p-3 text-center">Taux Marge (%)</th>
+                      <th className="p-3 text-center">Ratio Coût / Vente</th>
+                      <th className="p-3 text-center">Diagnostic Seuil</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800/80 text-slate-300">
+                    {ordersProfitability.map(cmd => {
+                      const isExpanded = expandedOrderIds.has(cmd.id);
+                      return (
+                        <React.Fragment key={cmd.id}>
+                          <tr 
+                            className={`transition-colors cursor-pointer ${
+                              cmd.isCmdOver 
+                                ? 'bg-rose-950/25 hover:bg-rose-950/35 border-l-4 border-l-rose-500' 
+                                : 'hover:bg-slate-800/40'
+                            }`}
+                            onClick={() => toggleOrderExpanded(cmd.id)}
+                          >
+                            <td className="p-3 text-center text-slate-400">
+                              {isExpanded ? (
+                                <ChevronDown className="w-4 h-4 text-sky-400 mx-auto" />
+                              ) : (
+                                <ChevronRight className="w-4 h-4 text-slate-500 mx-auto" />
+                              )}
+                            </td>
 
-              const lignesDetail = cmd.lignes.map(l => {
-                const art = articles.find(a => a.id === l.articleId);
-                const coutStd = art?.coutUnitaireStandard ?? art?.prixUnitaireEstime ?? 0;
-                const totalLigneCA = l.quantiteCommandee * l.prixUnitaire;
-                const totalLigneCout = l.quantiteCommandee * coutStd;
-                const margeLigne = totalLigneCA - totalLigneCout;
-                const tauxLigne = totalLigneCA > 0 ? (margeLigne / totalLigneCA) * 100 : 0;
-                const ratioLigne = totalLigneCA > 0 ? (totalLigneCout / totalLigneCA) * 100 : 0;
-                const isLigneOver = ratioLigne >= costThreshold;
+                            <td className="p-3">
+                              <div className="font-mono font-bold text-white flex items-center gap-1.5">
+                                <span className="px-2 py-0.5 rounded bg-sky-950 border border-sky-800/80 text-sky-300 text-xs">
+                                  {cmd.numeroCommande}
+                                </span>
+                              </div>
+                              <div className="text-[11px] text-slate-400 mt-0.5 flex items-center gap-1">
+                                <Calendar className="w-3 h-3 text-slate-500" />
+                                <span>{new Date(cmd.dateCommande).toLocaleDateString('fr-FR')}</span>
+                              </div>
+                            </td>
 
-                cmdCA += totalLigneCA;
-                cmdCoutStd += totalLigneCout;
+                            <td className="p-3">
+                              <div className="font-semibold text-white text-xs">{cmd.clientNom}</div>
+                              <div className="mt-1">
+                                <span className={`px-2 py-0.5 rounded text-[10px] font-semibold ${
+                                  cmd.statut === 'Expediee'
+                                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                                    : cmd.statut === 'EnProduction'
+                                      ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                                      : 'bg-sky-500/20 text-sky-300 border border-sky-500/30'
+                                }`}>
+                                  {cmd.statut}
+                                </span>
+                              </div>
+                            </td>
 
-                return {
-                  ...l,
-                  article: art,
-                  coutStd,
-                  totalLigneCA,
-                  totalLigneCout,
-                  margeLigne,
-                  tauxLigne,
-                  ratioLigne,
-                  isLigneOver
-                };
-              });
+                            <td className="p-3 text-right font-mono font-bold text-white">
+                              {cmd.totalQty.toLocaleString('fr-FR')} U
+                              <div className="text-[10px] text-slate-400 font-sans font-normal">
+                                {cmd.lignesDetail.length} réf.
+                              </div>
+                            </td>
 
-              const cmdMarge = cmdCA - cmdCoutStd;
-              const cmdTauxMarge = cmdCA > 0 ? (cmdMarge / cmdCA) * 100 : 0;
-              const cmdRatio = cmdCA > 0 ? (cmdCoutStd / cmdCA) * 100 : 0;
-              const isCmdOver = cmdRatio >= costThreshold;
+                            <td className="p-3 text-right font-mono text-indigo-300 font-bold">
+                              {cmd.cmdCoutStd.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} DA
+                            </td>
 
-              return (
+                            <td className="p-3 text-right font-mono text-white font-bold">
+                              {cmd.cmdCA.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} DA
+                            </td>
+
+                            {/* CELLULE MARGE BRUTE DYNAMIQUE */}
+                            <td className="p-3 text-right font-mono font-bold bg-emerald-950/20 border-x border-emerald-800/30">
+                              <div className={`text-sm ${cmd.cmdMarge >= 0 ? (cmd.isCmdOver ? 'text-amber-300' : 'text-emerald-400') : 'text-rose-400'}`}>
+                                {cmd.cmdMarge >= 0 ? `+${cmd.cmdMarge.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : cmd.cmdMarge.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} DA
+                              </div>
+                              <div className="text-[10px] text-slate-400 font-normal">
+                                Moy. +{cmd.margeMoyenneUnitaire.toFixed(2)} DA / U
+                              </div>
+                            </td>
+
+                            <td className="p-3 text-center font-mono">
+                              <span className={`px-2 py-0.5 rounded text-[11px] font-bold ${
+                                cmd.cmdTauxMarge >= 30 
+                                  ? 'text-emerald-400 bg-emerald-500/10' 
+                                  : cmd.cmdTauxMarge >= 15 
+                                    ? 'text-amber-300 bg-amber-500/10' 
+                                    : 'text-rose-400 bg-rose-500/10'
+                              }`}>
+                                {cmd.cmdTauxMarge.toFixed(1)}%
+                              </span>
+                            </td>
+
+                            <td className="p-3 text-center min-w-[130px]">
+                              <div className="space-y-1">
+                                <div className="flex items-center justify-between text-[10px] font-mono">
+                                  <span className={cmd.isCmdOver ? 'text-rose-400 font-bold' : 'text-slate-300'}>
+                                    {cmd.cmdRatio.toFixed(1)}%
+                                  </span>
+                                  <span className="text-[9px] text-slate-500">
+                                    Seuil {costThreshold}%
+                                  </span>
+                                </div>
+                                <div className="w-full bg-slate-950 h-1.5 rounded-full overflow-hidden relative border border-slate-800">
+                                  <div 
+                                    className={`h-full rounded-full transition-all ${
+                                      cmd.isCmdOver 
+                                        ? 'bg-rose-500' 
+                                        : cmd.cmdRatio >= 70 
+                                          ? 'bg-amber-500' 
+                                          : 'bg-emerald-500'
+                                    }`}
+                                    style={{ width: `${Math.min(100, Math.max(3, cmd.cmdRatio))}%` }}
+                                  />
+                                </div>
+                              </div>
+                            </td>
+
+                            <td className="p-3 text-center">
+                              {cmd.isCmdOver ? (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-rose-500/25 text-rose-300 border border-rose-500/40 animate-pulse">
+                                  <AlertTriangle className="w-3 h-3 text-rose-400" />
+                                  <span>Alerte Seuil</span>
+                                </span>
+                              ) : cmd.cmdTauxMarge >= 35 ? (
+                                <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                                  Rentable
+                                </span>
+                              ) : (
+                                <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-sky-500/20 text-sky-300 border border-sky-500/30">
+                                  Conforme
+                                </span>
+                              )}
+                            </td>
+                          </tr>
+
+                          {/* ACCORDION SUB-TABLE FOR ORDER LINES WITH MARGE BRUTE */}
+                          {isExpanded && (
+                            <tr className="bg-slate-950/70 border-b border-slate-800">
+                              <td colSpan={10} className="p-3 pl-8">
+                                <div className="bg-slate-900/90 rounded-xl border border-slate-800 p-3 space-y-2">
+                                  <div className="flex items-center justify-between text-xs text-slate-300 font-semibold border-b border-slate-800 pb-1.5">
+                                    <span className="flex items-center gap-1.5">
+                                      <Boxes className="w-3.5 h-3.5 text-sky-400" />
+                                      <span>Ventilation par Référence Produit de la Commande {cmd.numeroCommande}</span>
+                                    </span>
+                                    <span className="text-[11px] font-mono text-slate-400">
+                                      Marge Brute Ligne = Total Prix Vente - Total Coût Revient Std
+                                    </span>
+                                  </div>
+
+                                  <div className="overflow-x-auto">
+                                    <table className="w-full text-left text-xs">
+                                      <thead className="text-[10px] font-mono text-slate-400 border-b border-slate-800/80">
+                                        <tr>
+                                          <th className="py-1.5 px-2">Article</th>
+                                          <th className="py-1.5 px-2 text-right">Quantité</th>
+                                          <th className="py-1.5 px-2 text-right">Coût Unitaire Std</th>
+                                          <th className="py-1.5 px-2 text-right">Prix Vente Unitaire</th>
+                                          <th className="py-1.5 px-2 text-right">Total Coût Std</th>
+                                          <th className="py-1.5 px-2 text-right">Total Prix Vente</th>
+                                          <th className="py-1.5 px-2 text-right text-emerald-300 font-bold bg-emerald-950/30">
+                                            Marge Brute Ligne (DA)
+                                          </th>
+                                          <th className="py-1.5 px-2 text-center">Taux Ligne (%)</th>
+                                          <th className="py-1.5 px-2 text-center">Marge Unitaire (DA/U)</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody className="divide-y divide-slate-800/60 font-mono text-[11px]">
+                                        {cmd.lignesDetail.map(l => (
+                                          <tr key={l.id} className={l.isLigneOver ? 'bg-rose-950/20' : ''}>
+                                            <td className="py-1.5 px-2">
+                                              <span className="font-bold text-sky-300">{l.article?.code}</span>
+                                              <span className="text-slate-400 text-[10px] font-sans ml-1.5">({l.article?.designation})</span>
+                                            </td>
+                                            <td className="py-1.5 px-2 text-right text-white font-bold">
+                                              {l.quantiteCommandee} {l.article?.uniteMesure}
+                                            </td>
+                                            <td className="py-1.5 px-2 text-right text-indigo-300">
+                                              {l.coutStd.toFixed(2)} DA
+                                            </td>
+                                            <td className="py-1.5 px-2 text-right text-sky-300">
+                                              {l.prixUnitaire.toFixed(2)} DA
+                                            </td>
+                                            <td className="py-1.5 px-2 text-right text-indigo-200">
+                                              {l.totalLigneCout.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} DA
+                                            </td>
+                                            <td className="py-1.5 px-2 text-right text-white font-bold">
+                                              {l.totalLigneCA.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} DA
+                                            </td>
+                                            {/* MARGE BRUTE DE LA LIGNE */}
+                                            <td className="py-1.5 px-2 text-right font-bold bg-emerald-950/20 text-emerald-400">
+                                              +{l.margeLigne.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} DA
+                                            </td>
+                                            <td className="py-1.5 px-2 text-center font-bold text-slate-300">
+                                              {l.tauxLigne.toFixed(1)}%
+                                            </td>
+                                            <td className="py-1.5 px-2 text-center text-emerald-300">
+                                              +{l.margeUnitaire.toFixed(2)} DA / U
+                                            </td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </React.Fragment>
+                      );
+                    })}
+                  </tbody>
+                  {/* FOOTER RÉCAPITULATIF GLOBAL DES COMMANDES */}
+                  <tfoot className="bg-slate-950 font-semibold border-t-2 border-slate-700 text-xs">
+                    <tr>
+                      <td className="p-3 text-center font-mono text-slate-400">∑</td>
+                      <td className="p-3 text-white font-mono">TOTAL CUMULÉ COMMANDES</td>
+                      <td className="p-3 text-slate-400 font-mono text-[11px]">{ordersProfitability.length} contrats</td>
+                      <td className="p-3 text-right font-mono text-white font-bold">
+                        {ordersTotals.totalQty.toLocaleString('fr-FR')} U
+                      </td>
+                      <td className="p-3 text-right font-mono font-bold text-indigo-300">
+                        {ordersTotals.totalCoutStd.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} DA
+                      </td>
+                      <td className="p-3 text-right font-mono font-bold text-sky-400">
+                        {ordersTotals.totalCA.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} DA
+                      </td>
+                      {/* TOTAL MARGE BRUTE CUMULÉE */}
+                      <td className="p-3 text-right font-mono font-bold text-emerald-400 text-sm bg-emerald-950/30 border-x border-emerald-800/40">
+                        +{ordersTotals.totalMarge.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} DA
+                      </td>
+                      <td className="p-3 text-center">
+                        <span className="px-2.5 py-0.5 rounded-full text-xs font-bold font-mono bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                          {ordersTotals.tauxMarge.toFixed(1)}%
+                        </span>
+                      </td>
+                      <td className="p-3 text-center font-mono text-[11px] text-slate-300">
+                        Ratio : {ordersTotals.ratioGlobal.toFixed(1)}%
+                      </td>
+                      <td className="p-3 text-center">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-emerald-500/20 text-emerald-300">
+                          Portefeuille Sain
+                        </span>
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </div>
+          ) : (
+            /* VUE CARTES DÉTAILLÉES ALTERNATIVE */
+            <div className="grid grid-cols-1 gap-4">
+              {ordersProfitability.map(cmd => (
                 <div 
                   key={cmd.id} 
                   className={`p-4 rounded-xl border space-y-3 transition-colors ${
-                    isCmdOver 
+                    cmd.isCmdOver 
                       ? 'bg-slate-950 border-rose-800/80 shadow-md shadow-rose-950/20' 
                       : 'bg-slate-950 border-slate-800'
                   }`}
@@ -1042,7 +1435,7 @@ export const ProductCostVsRevenueSection: React.FC<ProductCostVsRevenueSectionPr
                       <div>
                         <div className="font-semibold text-white text-xs flex items-center gap-2">
                           <span>{cmd.clientNom}</span>
-                          {isCmdOver && (
+                          {cmd.isCmdOver && (
                             <span className="px-2 py-0.2 rounded-full text-[10px] font-mono bg-rose-500/20 text-rose-300 border border-rose-500/40">
                               Coût ≥ {costThreshold}%
                             </span>
@@ -1064,9 +1457,10 @@ export const ProductCostVsRevenueSection: React.FC<ProductCostVsRevenueSectionPr
                       </span>
 
                       <div className="text-right">
-                        <div className="text-white font-mono font-bold">{cmdCA.toLocaleString()} DA</div>
-                        <div className={`font-mono text-[11px] font-semibold ${isCmdOver ? 'text-amber-400' : 'text-emerald-400'}`}>
-                          +{cmdMarge.toLocaleString()} DA ({cmdTauxMarge.toFixed(1)}%)
+                        <div className="text-white font-mono font-bold">Ventes: {cmd.cmdCA.toLocaleString()} DA</div>
+                        <div className="text-indigo-300 font-mono text-[11px]">Coût: {cmd.cmdCoutStd.toLocaleString()} DA</div>
+                        <div className="mt-0.5 px-2 py-0.5 rounded bg-emerald-950/60 border border-emerald-800/60 font-mono text-[11px] font-bold text-emerald-400">
+                          Marge Brute: +{cmd.cmdMarge.toLocaleString()} DA ({cmd.cmdTauxMarge.toFixed(1)}%)
                         </div>
                       </div>
                     </div>
@@ -1074,7 +1468,7 @@ export const ProductCostVsRevenueSection: React.FC<ProductCostVsRevenueSectionPr
 
                   {/* Order lines breakdown */}
                   <div className="divide-y divide-slate-800/60 text-xs">
-                    {lignesDetail.map(l => (
+                    {cmd.lignesDetail.map(l => (
                       <div 
                         key={l.id} 
                         className={`py-2 flex flex-col md:flex-row md:items-center justify-between gap-2 ${
@@ -1090,22 +1484,22 @@ export const ProductCostVsRevenueSection: React.FC<ProductCostVsRevenueSectionPr
                         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-[11px]">
                           <span>Qte: <strong className="text-white">{l.quantiteCommandee} {l.article?.uniteMesure}</strong></span>
                           <span>Coût Std: <strong className="text-indigo-300">{l.coutStd.toFixed(2)} DA</strong></span>
-                          <span>Prix Vendu: <strong className="text-sky-300">{l.prixUnitaire.toFixed(2)} DA</strong></span>
+                          <span>Prix Vente: <strong className="text-sky-300">{l.prixUnitaire.toFixed(2)} DA</strong></span>
                           <span className={l.isLigneOver ? 'text-rose-400 font-bold' : 'text-slate-300'}>
                             Ratio: {l.ratioLigne.toFixed(1)}%
                           </span>
                           <span>Total Vente: <span className="text-white font-bold">{l.totalLigneCA.toLocaleString()} DA</span></span>
-                          <span className={l.isLigneOver ? 'text-amber-300 font-bold' : 'text-emerald-400 font-bold'}>
-                            Marge: +{l.margeLigne.toLocaleString()} DA ({l.tauxLigne.toFixed(1)}%)
+                          <span className="px-2 py-0.5 rounded bg-emerald-950/60 text-emerald-400 font-bold border border-emerald-800/50">
+                            Marge Brute: +{l.margeLigne.toLocaleString()} DA ({l.tauxLigne.toFixed(1)}%)
                           </span>
                         </div>
                       </div>
                     ))}
                   </div>
                 </div>
-              );
-            })}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

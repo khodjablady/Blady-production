@@ -19,6 +19,7 @@ import {
   ExternalLink,
   Info
 } from 'lucide-react';
+import { BladyLogo } from './BladyLogo';
 import { useAuth, getFirebaseAuthErrorMessage } from '../context/AuthContext';
 
 export const AuthScreen: React.FC = () => {
@@ -173,18 +174,24 @@ export const AuthScreen: React.FC = () => {
         <div className="lg:col-span-5 flex flex-col space-y-6 text-left">
           
           {/* Header & Logo */}
-          <div className="flex items-center space-x-3.5">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-sky-600 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-sky-950/80 border border-sky-400/30">
-              <Factory className="w-7 h-7" />
+          <div className="flex items-center space-x-4">
+            <div className="relative group">
+              <BladyLogo className="w-16 h-16 drop-shadow-xl hover:scale-105 transition-transform duration-300" />
             </div>
             <div>
               <div className="flex items-center space-x-2">
                 <h1 className="text-2xl font-black tracking-tight text-white">BladyProduction</h1>
+                <span className="px-2 py-0.5 text-[11px] font-bold rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                  SNC Khodja
+                </span>
                 <span className="px-2 py-0.5 text-[11px] font-bold rounded-md bg-sky-500/20 text-sky-400 border border-sky-500/30">
                   .NET 8/9
                 </span>
               </div>
-              <p className="text-xs text-slate-400 font-mono">
+              <p className="text-xs text-slate-300 font-medium">
+                SNC KHODJA & CO. • Sustainable Culinary Heritage
+              </p>
+              <p className="text-[11px] text-slate-400 font-mono">
                 MES • ERP • Connectivité OPC UA Industrielle
               </p>
             </div>

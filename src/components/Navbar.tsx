@@ -22,6 +22,7 @@ import {
   FlaskConical,
   GitFork
 } from 'lucide-react';
+import { BladyLogo } from './BladyLogo';
 import { useAuth } from '../context/AuthContext';
 
 interface NavbarProps {
@@ -51,19 +52,23 @@ export const Navbar: React.FC<NavbarProps> = ({
           
           {/* Logo & Title */}
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-lg bg-sky-600 flex items-center justify-center text-white shadow-md shadow-sky-900/40">
-              <Factory className="w-6 h-6" />
+            <div className="relative group cursor-pointer" onClick={() => setActiveTab('synoptic')}>
+              <BladyLogo className="w-11 h-11 drop-shadow-md hover:scale-105 transition-transform duration-200" />
             </div>
             <div>
               <div className="flex items-center space-x-2">
-                <span className="font-bold text-lg tracking-tight text-white">BladyProduction</span>
-                <span className="px-2 py-0.5 text-xs font-semibold rounded bg-sky-500/20 text-sky-400 border border-sky-500/30">
+                <span className="font-bold text-lg tracking-tight text-white flex items-center gap-1.5">
+                  <span>BladyProduction</span>
+                </span>
+                <span className="px-2 py-0.5 text-xs font-semibold rounded bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                  SNC Khodja
+                </span>
+                <span className="px-1.5 py-0.5 text-[10px] font-mono rounded bg-sky-500/20 text-sky-400 border border-sky-500/30">
                   .NET 8/9
                 </span>
-                <span className="text-xs text-slate-400 hidden sm:inline">Monolithe Modulaire</span>
               </div>
-              <p className="text-xs text-slate-400 hidden md:block">
-                ERP + MES + Connectivité IoT Process Liquides
+              <p className="text-[11px] text-slate-400 hidden md:block">
+                ERP + MES + Connectivité Process Liquides & Agroalimentaire
               </p>
             </div>
           </div>

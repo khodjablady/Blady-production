@@ -29,6 +29,7 @@ import { INITIAL_CONTROLES_QUALITE } from './data/qualitySpecs';
 import { MrpStockEngine } from './services/mrpService';
 import { Article, Nomenclature, CommandeClient, SuggestionAchat, BonReception, MouvementStock, OrdreFabrication, MachineLigne, OeeMetrics, InterventionMaintenance, ControleQualiteLot } from './types';
 import { CheckCircle2, AlertTriangle, Info, X, Factory } from 'lucide-react';
+import { BladyLogo } from './components/BladyLogo';
 import { useAuth } from './context/AuthContext';
 import { AuthScreen } from './components/AuthScreen';
 import { 
@@ -594,8 +595,8 @@ export default function App() {
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center p-4">
-        <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-sky-600 to-indigo-600 flex items-center justify-center shadow-xl shadow-sky-950/80 border border-sky-400/30 animate-pulse mb-4">
-          <Factory className="w-8 h-8 text-white" />
+        <div className="relative mb-4 animate-pulse">
+          <BladyLogo className="w-20 h-20 drop-shadow-2xl" />
         </div>
         <div className="flex items-center space-x-3 text-slate-300 text-sm font-medium">
           <div className="w-4 h-4 border-2 border-sky-400 border-t-transparent rounded-full animate-spin" />
