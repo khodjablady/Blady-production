@@ -33,6 +33,7 @@ interface NavbarProps {
   onResetData: () => void;
   criticalAlertCount: number;
   qualityAlertCount?: number;
+  telemetryAlertCount?: number;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -42,7 +43,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   setIsSimulating,
   onResetData,
   criticalAlertCount,
-  qualityAlertCount = 0
+  qualityAlertCount = 0,
+  telemetryAlertCount = 0
 }) => {
   const { user, profile, dbConnected, loginWithGoogle, logout } = useAuth();
   return (
@@ -200,6 +202,11 @@ export const Navbar: React.FC<NavbarProps> = ({
             >
               <Cpu className="w-4 h-4 text-sky-400" />
               <span>Connectivité Industrielle</span>
+              {telemetryAlertCount > 0 && (
+                <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-rose-500/30 text-rose-300 font-bold border border-rose-500/50 animate-pulse">
+                  {telemetryAlertCount}
+                </span>
+              )}
             </button>
 
             <button
@@ -373,7 +380,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           onClick={() => setActiveTab('connectivity')}
           className={`px-3 py-1 rounded whitespace-nowrap ${activeTab === 'connectivity' ? 'bg-sky-600 text-white font-semibold' : 'text-slate-400'}`}
         >
-          Connectivité Industrielle
+          Connectivité {telemetryAlertCount > 0 ? `(${telemetryAlertCount} alertes)` : ''}
         </button>
         <button
           onClick={() => setActiveTab('csharp')}

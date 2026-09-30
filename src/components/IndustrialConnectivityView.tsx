@@ -24,13 +24,43 @@ import {
   Bug,
   RotateCcw,
   X,
-  Settings
+  Settings,
+  ShieldAlert,
+  BellRing,
+  Cloud,
+  TrendingUp,
+  LineChart
 } from 'lucide-react';
-import { MachineLigne, OpcUaNode, PlcStation, ModbusLogEntry, SimulatedFaultType } from '../types';
+import { 
+  MachineLigne, 
+  OpcUaNode, 
+  PlcStation, 
+  ModbusLogEntry, 
+  SimulatedFaultType,
+  MachineTelemetryThresholds,
+  TelemetryAlert,
+  MachineToCloudLogEntry
+} from '../types';
 import { INITIAL_PLCS, INITIAL_MODBUS_LOGS, generateModbusTelegram } from '../data/plcData';
+import { INITIAL_M2C_LOGS, generateMachineToCloudLog } from '../data/machineToCloudData';
+import { 
+  loadTelemetryThresholds, 
+  saveTelemetryThresholds, 
+  evaluateTelemetryAlerts, 
+  DEFAULT_TELEMETRY_THRESHOLDS 
+} from '../utils/telemetryThresholds';
+import { 
+  generateInitialTelemetryHistory, 
+  appendTelemetryPoint, 
+  TelemetryDataPoint 
+} from '../utils/telemetryTimeSeries';
 import { PlcDashboard } from './PlcDashboard';
 import { ModbusLogTerminal } from './ModbusLogTerminal';
 import { MachineEditModal } from './MachineEditModal';
+import { TelemetryThresholdsPanel } from './TelemetryThresholdsPanel';
+import { TelemetryAlertBanner } from './TelemetryAlertBanner';
+import { MachineToCloudLogViewer } from './MachineToCloudLogViewer';
+import { TelemetryD3TimeSeriesChart } from './TelemetryD3TimeSeriesChart';
 
 interface IndustrialConnectivityViewProps {
   machines: MachineLigne[];
@@ -46,7 +76,24 @@ export const IndustrialConnectivityView: React.FC<IndustrialConnectivityViewProp
   isLiveSimulating
 }) => {
   // Navigation tabs inside connectivity
-  const [subTab, setSubTab] = useState<'plc-modbus' | 'opc-ua' | 'machines' | 'csharp'>('plc-modbus');
+  const [subTab, setSubTab] = useState<'plc-modbus' | 'opc-ua' | 'm2c' | 'curves' | 'machines' | 'thresholds' | 'csharp'>('plc-modbus');
+
+  // D3 Time-Series Telemetry History state
+  const [telemetryHistory, setTelemetryHistory] = useState<Record<number, TelemetryDataPoint[]>>(() => 
+    generateInitialTelemetryHistory(machines)
+  );
+  const [selectedCurveMachineId, setSelectedCurveMachineId] = useState<number>(1);
+  const [isCurveStreaming, setIsCurveStreaming] = useState<boolean>(true);
+
+  // Machine-to-Cloud telemetry streaming state
+  const [m2cLogs, setM2cLogs] = useState<MachineToCloudLogEntry[]>(INITIAL_M2C_LOGS);
+  const [isM2cStreaming, setIsM2cStreaming] = useState<boolean>(true);
+  const [activeCloudFault, setActiveCloudFault] = useState<'NORMAL' | 'HIGH_LATENCY' | 'RATE_LIMIT_429' | 'GATEWAY_TIMEOUT_504' | 'INJECTED_THERMAL_ALERT'>('NORMAL');
+
+  // Telemetry threshold state & alerts
+  const [thresholds, setThresholds] = useState<Record<number, MachineTelemetryThresholds>>(loadTelemetryThresholds);
+  const [injectedPressureMachineId, setInjectedPressureMachineId] = useState<number | undefined>(undefined);
+  const [isAlertAcknowledged, setIsAlertAcknowledged] = useState<boolean>(false);
 
   // Machine editing modal state
   const [editingMachine, setEditingMachine] = useState<MachineLigne | null>(null);
@@ -92,6 +139,34 @@ export const IndustrialConnectivityView: React.FC<IndustrialConnectivityViewProp
     totalCount: number;
     errorCount: number;
   } | null>(null);
+
+  // Evaluate active telemetry alerts against current machine readings
+  const activeAlerts = React.useMemo(() => {
+    return evaluateTelemetryAlerts(machines, thresholds, injectedAlarm, injectedPressureMachineId);
+  }, [machines, thresholds, injectedAlarm, injectedPressureMachineId]);
+
+  // Reset acknowledgment when alert count increases
+  const prevAlertsCountRef = useRef<number>(0);
+  useEffect(() => {
+    if (activeAlerts.length > prevAlertsCountRef.current) {
+      setIsAlertAcknowledged(false);
+    }
+    prevAlertsCountRef.current = activeAlerts.length;
+  }, [activeAlerts.length]);
+
+  const handleSaveThresholds = (updated: Record<number, MachineTelemetryThresholds>) => {
+    setThresholds(updated);
+    saveTelemetryThresholds(updated);
+  };
+
+  const handleResetThresholds = () => {
+    setThresholds(DEFAULT_TELEMETRY_THRESHOLDS);
+    saveTelemetryThresholds(DEFAULT_TELEMETRY_THRESHOLDS);
+  };
+
+  const handleToggleInjectedPressure = (machineId: number) => {
+    setInjectedPressureMachineId(prev => prev === machineId ? undefined : machineId);
+  };
 
   // Real-time polling & telemetry loop
   useEffect(() => {
@@ -150,14 +225,29 @@ export const IndustrialConnectivityView: React.FC<IndustrialConnectivityViewProp
             } else if (p.id === 'PLC-03') {
               if (reg.address === '40001') return { ...reg, currentValue: machine?.cadenceActuelle || 920 };
               if (reg.address === '40002') return { ...reg, currentValue: machine?.pressionBar || 2.1 };
+            } else if (p.id === 'PLC-04') {
+              if (reg.address === '00001') return { ...reg, currentValue: machine?.statut === 'EnMarche' };
             } else if (p.id === 'PLC-05') {
               if (reg.address === '40001') return { ...reg, currentValue: machine?.cadenceActuelle || 920 };
             }
             return reg;
           });
 
+          // Sync PLC status with machine status if not in simulated fault test
+          let effectiveStatus = p.status;
+          if (!p.simulatedFault || p.simulatedFault === 'NONE') {
+            if (machine?.statut === 'Panne') {
+              effectiveStatus = 'FAULT';
+            } else if (machine?.statut === 'ArretNettoyage' || machine?.statut === 'EnAttente') {
+              effectiveStatus = 'STANDBY';
+            } else if (machine?.statut === 'EnMarche') {
+              effectiveStatus = 'ONLINE';
+            }
+          }
+
           return {
             ...p,
+            status: effectiveStatus,
             latencyMs: newLatency,
             latencyMin: newMin,
             latencyMax: newMax,
@@ -172,6 +262,53 @@ export const IndustrialConnectivityView: React.FC<IndustrialConnectivityViewProp
 
     return () => clearInterval(interval);
   }, [isStreaming, isLiveSimulating, machines, injectedAlarm]);
+
+  // Machine-to-Cloud Real-time Streaming Pipeline Loop
+  useEffect(() => {
+    if (!isM2cStreaming) return;
+
+    const interval = setInterval(() => {
+      setM2cLogs(prev => {
+        const effectiveFault = injectedAlarm ? 'INJECTED_THERMAL_ALERT' : activeCloudFault;
+        const newLog = generateMachineToCloudLog(machines, prev, effectiveFault);
+        return [newLog, ...prev].slice(0, 150);
+      });
+    }, isLiveSimulating ? 1800 : 3200);
+
+    return () => clearInterval(interval);
+  }, [isM2cStreaming, isLiveSimulating, machines, activeCloudFault, injectedAlarm]);
+
+  const handleTriggerManualPing = () => {
+    const newLog = generateMachineToCloudLog(machines, m2cLogs, activeCloudFault);
+    setM2cLogs(prev => [newLog, ...prev].slice(0, 150));
+  };
+
+  // D3 Time-Series Telemetry Streaming Loop
+  useEffect(() => {
+    if (!isCurveStreaming) return;
+
+    const interval = setInterval(() => {
+      setTelemetryHistory(prev => {
+        let updated = { ...prev };
+        machines.forEach(m => {
+          updated = appendTelemetryPoint(
+            updated,
+            m,
+            injectedAlarm,
+            injectedPressureMachineId,
+            50
+          );
+        });
+        return updated;
+      });
+    }, isLiveSimulating ? 1500 : 2500);
+
+    return () => clearInterval(interval);
+  }, [isCurveStreaming, isLiveSimulating, machines, injectedAlarm, injectedPressureMachineId]);
+
+  const handleResetCurves = () => {
+    setTelemetryHistory(generateInitialTelemetryHistory(machines));
+  };
 
   // Handler: Manual Force Poll for a PLC
   const handlePollPlc = (plcId: string) => {
@@ -800,6 +937,26 @@ export const IndustrialConnectivityView: React.FC<IndustrialConnectivityViewProp
               </span>
             </button>
 
+            {/* Seuils & Alarmes Télémétrie Header Button */}
+            <button
+              id="header-thresholds-btn"
+              onClick={() => setSubTab('thresholds')}
+              className={`flex items-center space-x-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all border ${
+                activeAlerts.length > 0
+                  ? 'bg-rose-600/30 text-rose-200 border-rose-500 shadow-md shadow-rose-950/40 ring-1 ring-rose-400/40 animate-pulse'
+                  : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-750 hover:text-white'
+              }`}
+              title="Configurer les seuils d'alerte pour les températures et pressions machines"
+            >
+              <Sliders className="w-4 h-4 text-amber-400" />
+              <span>Seuils Télémétrie</span>
+              {activeAlerts.length > 0 && (
+                <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-rose-500 text-white border border-rose-400 animate-pulse">
+                  {activeAlerts.length}
+                </span>
+              )}
+            </button>
+
             {/* Exporter Logs CSV Button */}
             <button
               id="export-logs-csv-btn"
@@ -879,10 +1036,10 @@ export const IndustrialConnectivityView: React.FC<IndustrialConnectivityViewProp
         )}
 
         {/* Sub-Navigation Tabs */}
-        <div className="flex items-center space-x-2 mt-4 pt-3 border-t border-slate-800/80">
+        <div className="flex items-center space-x-2 mt-4 pt-3 border-t border-slate-800/80 overflow-x-auto">
           <button
             onClick={() => setSubTab('plc-modbus')}
-            className={`flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
+            className={`flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
               subTab === 'plc-modbus'
                 ? 'bg-sky-600 text-white shadow-sm font-semibold'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
@@ -894,7 +1051,7 @@ export const IndustrialConnectivityView: React.FC<IndustrialConnectivityViewProp
 
           <button
             onClick={() => setSubTab('opc-ua')}
-            className={`flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
+            className={`flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
               subTab === 'opc-ua'
                 ? 'bg-sky-600 text-white shadow-sm font-semibold'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
@@ -905,8 +1062,35 @@ export const IndustrialConnectivityView: React.FC<IndustrialConnectivityViewProp
           </button>
 
           <button
+            id="subtab-m2c-btn"
+            onClick={() => setSubTab('m2c')}
+            className={`flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
+              subTab === 'm2c'
+                ? 'bg-sky-600 text-white shadow-sm font-semibold'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+            }`}
+          >
+            <Cloud className="w-4 h-4 text-cyan-400" />
+            <span>Flux Machine-to-Cloud (IIoT)</span>
+            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse ml-0.5"></span>
+          </button>
+
+          <button
+            id="subtab-curves-btn"
+            onClick={() => setSubTab('curves')}
+            className={`flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
+              subTab === 'curves'
+                ? 'bg-sky-600 text-white shadow-sm font-semibold'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+            }`}
+          >
+            <TrendingUp className="w-4 h-4 text-amber-400" />
+            <span>Courbes Temporelles D3.js</span>
+          </button>
+
+          <button
             onClick={() => setSubTab('machines')}
-            className={`flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
+            className={`flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
               subTab === 'machines'
                 ? 'bg-sky-600 text-white shadow-sm font-semibold'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
@@ -917,8 +1101,25 @@ export const IndustrialConnectivityView: React.FC<IndustrialConnectivityViewProp
           </button>
 
           <button
+            onClick={() => setSubTab('thresholds')}
+            className={`flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
+              subTab === 'thresholds'
+                ? 'bg-sky-600 text-white shadow-sm font-semibold'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+            }`}
+          >
+            <Sliders className="w-4 h-4 text-amber-400" />
+            <span>Seuils Télémétrie & Alarmes</span>
+            {activeAlerts.length > 0 && (
+              <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-rose-500 text-white font-bold animate-pulse">
+                {activeAlerts.length}
+              </span>
+            )}
+          </button>
+
+          <button
             onClick={() => setSubTab('csharp')}
-            className={`flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
+            className={`flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
               subTab === 'csharp'
                 ? 'bg-sky-600 text-white shadow-sm font-semibold'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
@@ -929,6 +1130,19 @@ export const IndustrialConnectivityView: React.FC<IndustrialConnectivityViewProp
           </button>
         </div>
       </div>
+
+      {/* Visual Notification Banner for Telemetry Alerts */}
+      <TelemetryAlertBanner
+        alerts={activeAlerts}
+        onOpenThresholdsConfig={() => setSubTab('thresholds')}
+        onResetInjectedAlarms={() => {
+          setInjectedAlarm(false);
+          setInjectedPressureMachineId(undefined);
+        }}
+        hasInjectedAlarms={injectedAlarm || injectedPressureMachineId !== undefined}
+        onAcknowledgeAlerts={() => setIsAlertAcknowledged(true)}
+        isAcknowledged={isAlertAcknowledged}
+      />
 
       {/* VIEW 1: PLC FLEET DASHBOARD & REAL-TIME MODBUS/TCP TERMINAL */}
       {subTab === 'plc-modbus' && (
@@ -959,7 +1173,35 @@ export const IndustrialConnectivityView: React.FC<IndustrialConnectivityViewProp
               onInjectFault={handleInjectFault}
               onResetFault={handleResetFault}
               onResetAllFaults={handleResetAllFaults}
+              telemetryAlerts={activeAlerts}
             />
+          </div>
+
+          {/* Quick Discovery Banner to Machine-to-Cloud Stream */}
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+            <div className="flex items-center space-x-3">
+              <div className="p-2 rounded-lg bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 shrink-0">
+                <Cloud className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="flex items-center space-x-2">
+                  <span className="font-bold text-white">Pipeline Cloud Ingest (MQTT Sparkplug B, REST & OPC UA PubSub)</span>
+                  <span className="px-1.5 py-0.2 rounded text-[9px] font-mono bg-cyan-950 text-cyan-300 border border-cyan-800 font-bold">
+                    {m2cLogs.length} trames
+                  </span>
+                </div>
+                <p className="text-slate-400 text-[11px] mt-0.5">
+                  Les données capturées sur ces automates sont encapsulées et transmises en continu vers le Cloud pour analyse et archivage.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setSubTab('m2c')}
+              className="px-3.5 py-1.5 bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-300 hover:text-white border border-cyan-500/40 rounded-xl text-xs font-semibold flex items-center space-x-1.5 shrink-0 transition-all hover:scale-[1.02]"
+            >
+              <span>Voir les logs Machine-to-Cloud</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
           </div>
 
           {/* Bottom Section: Real-Time Modbus/TCP Log Terminal */}
@@ -1133,6 +1375,38 @@ export const IndustrialConnectivityView: React.FC<IndustrialConnectivityViewProp
         </div>
       )}
 
+      {/* VIEW: MACHINE-TO-CLOUD DATA EXCHANGE LOGS */}
+      {subTab === 'm2c' && (
+        <MachineToCloudLogViewer
+          logs={m2cLogs}
+          machines={machines}
+          isStreaming={isM2cStreaming}
+          onToggleStreaming={() => setIsM2cStreaming(!isM2cStreaming)}
+          onClearLogs={() => setM2cLogs([])}
+          onTriggerManualPing={handleTriggerManualPing}
+          onInjectCloudFault={setActiveCloudFault}
+          activeCloudFault={activeCloudFault}
+        />
+      )}
+
+      {/* VIEW: D3.JS TELEMETRY TIME-SERIES CURVES */}
+      {subTab === 'curves' && (
+        <TelemetryD3TimeSeriesChart
+          machines={machines}
+          history={telemetryHistory}
+          thresholds={thresholds}
+          selectedMachineId={selectedCurveMachineId}
+          onSelectMachineId={setSelectedCurveMachineId}
+          isStreaming={isCurveStreaming}
+          onToggleStreaming={() => setIsCurveStreaming(!isCurveStreaming)}
+          onResetSeries={handleResetCurves}
+          injectedCuveAlarm={injectedAlarm}
+          onToggleInjectedCuveAlarm={() => setInjectedAlarm(!injectedAlarm)}
+          injectedPressureMachineId={injectedPressureMachineId}
+          onToggleInjectedPressure={handleToggleInjectedPressure}
+        />
+      )}
+
       {/* VIEW: OPERATIONAL MACHINES FLEET & CONFIGURATION */}
       {subTab === 'machines' && (
         <div className="space-y-6">
@@ -1158,13 +1432,46 @@ export const IndustrialConnectivityView: React.FC<IndustrialConnectivityViewProp
               const performancePct = m.cadenceNominale > 0 
                 ? Math.round((m.cadenceActuelle / m.cadenceNominale) * 100) 
                 : 0;
+              const machineAlerts = activeAlerts.filter(a => a.machineId === m.id);
+              const hasCritical = machineAlerts.some(a => a.severite === 'CRITICAL');
+              const hasAlert = machineAlerts.length > 0;
+              const tempAlert = machineAlerts.find(a => a.parametre === 'temperature');
+              const pressAlert = machineAlerts.find(a => a.parametre === 'pression');
+
+              const cardBorder = hasCritical
+                ? 'border-2 border-rose-500 shadow-2xl shadow-rose-950/80 bg-gradient-to-b from-rose-950/40 via-slate-900 to-slate-900 ring-2 ring-rose-500 animate-pulse'
+                : hasAlert
+                ? 'border-2 border-amber-500 shadow-xl shadow-amber-950/60 bg-gradient-to-b from-amber-950/25 via-slate-900 to-slate-900 ring-2 ring-amber-500/70 animate-pulse'
+                : 'border-slate-800 hover:border-slate-700 bg-slate-900';
 
               return (
                 <div 
                   key={m.id}
-                  className="bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-2xl p-5 shadow-sm space-y-4 transition-all flex flex-col justify-between"
+                  className={`border rounded-2xl p-5 shadow-sm space-y-4 transition-all flex flex-col justify-between ${cardBorder}`}
                 >
                   <div className="space-y-3">
+                    {/* Emergency Visual Indicator Beacon (Flashing Red / Amber) */}
+                    {hasAlert && (
+                      <div className={`p-2.5 rounded-xl border flex items-center justify-between text-xs font-mono font-bold animate-pulse ${
+                        hasCritical
+                          ? 'bg-rose-600 text-white border-rose-400 shadow-lg shadow-rose-950/70 ring-1 ring-rose-300'
+                          : 'bg-amber-500/25 text-amber-200 border-amber-500/70 ring-1 ring-amber-400/50'
+                      }`}>
+                        <div className="flex items-center space-x-2">
+                          <span className="relative flex h-3 w-3 shrink-0">
+                            <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${hasCritical ? 'bg-white' : 'bg-amber-400'}`}></span>
+                            <span className={`relative inline-flex rounded-full h-3 w-3 ${hasCritical ? 'bg-rose-200' : 'bg-amber-500'}`}></span>
+                          </span>
+                          <span className="uppercase tracking-wider">
+                            {hasCritical ? '🚨 DÉPASSEMENT SEUIL SÉCURITÉ' : '⚠️ AVERTISSEMENT SEUIL PROCÉDÉ'}
+                          </span>
+                        </div>
+                        <span className="text-[10px] bg-black/40 px-2 py-0.5 rounded font-mono">
+                          {machineAlerts.map(a => `${a.parametreNom}: ${a.valeurActuelle}${a.unite}`).join(' • ')}
+                        </span>
+                      </div>
+                    )}
+
                     {/* Header */}
                     <div className="flex items-start justify-between gap-2 border-b border-slate-800 pb-3">
                       <div>
@@ -1182,18 +1489,56 @@ export const IndustrialConnectivityView: React.FC<IndustrialConnectivityViewProp
                       </div>
 
                       {/* Status badge */}
-                      <span className={`px-2.5 py-0.5 rounded text-[10px] font-bold border ${
-                        m.statut === 'EnMarche'
-                          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                          : m.statut === 'EnAttente'
-                            ? 'bg-sky-500/10 text-sky-300 border-sky-500/30'
-                            : m.statut === 'ArretNettoyage'
-                              ? 'bg-amber-500/10 text-amber-300 border-amber-500/30'
-                              : 'bg-rose-500/10 text-rose-400 border-rose-500/30'
-                      }`}>
-                        {m.statut === 'EnMarche' ? '● En Marche' : m.statut === 'EnAttente' ? '○ En Attente' : m.statut === 'ArretNettoyage' ? '∿ Nettoyage CIP' : '⚠ En Panne'}
-                      </span>
+                      <div className="flex flex-col items-end gap-1">
+                        <span className={`px-2.5 py-0.5 rounded text-[10px] font-bold border ${
+                          m.statut === 'EnMarche'
+                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                            : m.statut === 'EnAttente'
+                              ? 'bg-sky-500/10 text-sky-300 border-sky-500/30'
+                              : m.statut === 'ArretNettoyage'
+                                ? 'bg-amber-500/10 text-amber-300 border-amber-500/30'
+                                : 'bg-rose-500/10 text-rose-400 border-rose-500/30'
+                        }`}>
+                          {m.statut === 'EnMarche' ? '● En Marche' : m.statut === 'EnAttente' ? '○ En Attente' : m.statut === 'ArretNettoyage' ? '∿ Nettoyage CIP' : '⚠ En Panne'}
+                        </span>
+
+                        {hasAlert && (
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold font-mono border flex items-center gap-1 ${
+                            hasCritical 
+                              ? 'bg-rose-600 text-white border-rose-400 animate-pulse shadow-sm shadow-rose-900' 
+                              : 'bg-amber-500/20 text-amber-300 border-amber-500/50'
+                          }`}>
+                            <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping"></span>
+                            <span>{hasCritical ? 'SEUIL CRITIQUE' : 'SEUIL WARNING'}</span>
+                          </span>
+                        )}
+                      </div>
                     </div>
+
+                    {/* Active Threshold Alert on Machine */}
+                    {hasAlert && (
+                      <div className={`p-2 rounded-xl border flex flex-col gap-1 text-[11px] font-mono ${
+                        hasCritical ? 'bg-rose-950/90 border-rose-500/90 text-rose-200' : 'bg-amber-950/80 border-amber-500/80 text-amber-200'
+                      }`}>
+                        <div className="flex items-center justify-between font-bold text-[10px] uppercase">
+                          <span className="flex items-center gap-1">
+                            <ShieldAlert className={`w-3.5 h-3.5 ${hasCritical ? 'text-rose-400 animate-pulse' : 'text-amber-400'}`} />
+                            <span>Anomalie Télémétrie Détectée</span>
+                          </span>
+                          <button
+                            onClick={() => setSubTab('thresholds')}
+                            className="text-[9px] underline hover:text-white"
+                          >
+                            Régler seuils
+                          </button>
+                        </div>
+                        {machineAlerts.map(a => (
+                          <div key={a.id} className="text-[10px] pl-4 text-slate-200">
+                            • {a.parametreNom} : <span className="font-bold text-white underline">{a.valeurActuelle} {a.unite}</span> (seuil : {a.valeurSeuil} {a.unite})
+                          </div>
+                        ))}
+                      </div>
+                    )}
 
                     {/* Cadences */}
                     <div className="bg-slate-950 p-3 rounded-xl border border-slate-800/80 space-y-2 text-xs">
@@ -1223,15 +1568,31 @@ export const IndustrialConnectivityView: React.FC<IndustrialConnectivityViewProp
                     {/* Sensors / Physical values */}
                     <div className="grid grid-cols-2 gap-2 text-[11px] font-mono">
                       {m.temperatureC !== undefined && (
-                        <div className="p-2 rounded-lg bg-slate-950/70 border border-slate-800 flex justify-between">
-                          <span className="text-slate-400">Temp. :</span>
-                          <span className="text-amber-300 font-bold">{m.temperatureC}°C</span>
+                        <div className={`p-2.5 rounded-xl border flex justify-between items-center transition-all ${
+                          tempAlert
+                            ? tempAlert.severite === 'CRITICAL'
+                              ? 'border-2 border-rose-500 bg-rose-950/90 text-white font-black animate-pulse shadow-md shadow-rose-950 ring-2 ring-rose-400/60'
+                              : 'border-2 border-amber-500 bg-amber-950/90 text-amber-200 font-bold ring-1 ring-amber-400/50'
+                            : 'bg-slate-950/70 border-slate-800'
+                        }`}>
+                          <span className="text-slate-400 text-xs">Temp. :</span>
+                          <span className={`font-bold ${tempAlert ? 'text-white' : 'text-amber-300'}`}>
+                            {m.temperatureC}°C {tempAlert ? '⚠️' : ''}
+                          </span>
                         </div>
                       )}
                       {m.pressionBar !== undefined && (
-                        <div className="p-2 rounded-lg bg-slate-950/70 border border-slate-800 flex justify-between">
-                          <span className="text-slate-400">Press. :</span>
-                          <span className="text-cyan-300 font-bold">{m.pressionBar} bar</span>
+                        <div className={`p-2.5 rounded-xl border flex justify-between items-center transition-all ${
+                          pressAlert
+                            ? pressAlert.severite === 'CRITICAL'
+                              ? 'border-2 border-rose-500 bg-rose-950/90 text-white font-black animate-pulse shadow-md shadow-rose-950 ring-2 ring-rose-400/60'
+                              : 'border-2 border-amber-500 bg-amber-950/90 text-amber-200 font-bold ring-1 ring-amber-400/50'
+                            : 'bg-slate-950/70 border-slate-800'
+                        }`}>
+                          <span className="text-slate-400 text-xs">Press. :</span>
+                          <span className={`font-bold ${pressAlert ? 'text-white' : 'text-cyan-300'}`}>
+                            {m.pressionBar} bar {pressAlert ? '⚠️' : ''}
+                          </span>
                         </div>
                       )}
                       {m.capaciteMaxLitres !== undefined && (
@@ -1267,19 +1628,48 @@ export const IndustrialConnectivityView: React.FC<IndustrialConnectivityViewProp
                       {m.statut === 'EnMarche' ? 'Arrêter / Nettoyer' : 'Démarrer'}
                     </button>
 
-                    <button
-                      onClick={() => handleOpenEditMachine(m)}
-                      className="px-3.5 py-1.5 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-bold shadow-md shadow-sky-950/40 transition-colors flex items-center space-x-1.5"
-                    >
-                      <Settings className="w-3.5 h-3.5" />
-                      <span>Modifier / Configurer</span>
-                    </button>
+                    <div className="flex items-center space-x-1.5">
+                      <button
+                        onClick={() => {
+                          setSelectedCurveMachineId(m.id);
+                          setSubTab('curves');
+                        }}
+                        className="px-2.5 py-1.5 bg-amber-600/20 hover:bg-amber-600/30 text-amber-300 hover:text-white border border-amber-500/40 rounded-xl text-xs font-semibold flex items-center space-x-1 transition-all hover:scale-[1.02]"
+                        title="Visualiser les courbes temporelles dynamiques D3.js de cette machine"
+                      >
+                        <TrendingUp className="w-3.5 h-3.5 text-amber-400" />
+                        <span>Courbes D3</span>
+                      </button>
+
+                      <button
+                        onClick={() => handleOpenEditMachine(m)}
+                        className="px-3.5 py-1.5 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-bold shadow-md shadow-sky-950/40 transition-colors flex items-center space-x-1.5"
+                      >
+                        <Settings className="w-3.5 h-3.5" />
+                        <span>Modifier</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               );
             })}
           </div>
         </div>
+      )}
+
+      {/* VIEW: CONFIGURABLE TELEMETRY THRESHOLDS & ALERTS */}
+      {subTab === 'thresholds' && (
+        <TelemetryThresholdsPanel
+          machines={machines}
+          thresholds={thresholds}
+          onSaveThresholds={handleSaveThresholds}
+          onResetDefaults={handleResetThresholds}
+          activeAlerts={activeAlerts}
+          injectedCuveAlarm={injectedAlarm}
+          onToggleInjectedCuveAlarm={() => setInjectedAlarm(!injectedAlarm)}
+          injectedPressureMachineId={injectedPressureMachineId}
+          onToggleInjectedPressure={handleToggleInjectedPressure}
+        />
       )}
 
       {/* VIEW 3: C# MODBUS DRIVER CODE VIEWER */}

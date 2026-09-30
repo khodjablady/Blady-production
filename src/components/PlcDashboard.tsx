@@ -23,7 +23,7 @@ import {
   ChevronDown,
   AlertCircle
 } from 'lucide-react';
-import { PlcStation, MachineLigne, SimulatedFaultType } from '../types';
+import { PlcStation, MachineLigne, SimulatedFaultType, TelemetryAlert } from '../types';
 
 interface PlcDashboardProps {
   plcs: PlcStation[];
@@ -38,6 +38,7 @@ interface PlcDashboardProps {
   onInjectFault?: (plcId: string, fault: SimulatedFaultType) => void;
   onResetFault?: (plcId: string) => void;
   onResetAllFaults?: () => void;
+  telemetryAlerts?: TelemetryAlert[];
 }
 
 export const PlcDashboard: React.FC<PlcDashboardProps> = ({
@@ -52,7 +53,8 @@ export const PlcDashboard: React.FC<PlcDashboardProps> = ({
   onSelectTargetDiagnosticPlc,
   onInjectFault,
   onResetFault,
-  onResetAllFaults
+  onResetAllFaults,
+  telemetryAlerts = []
 }) => {
   const [cardMenuOpen, setCardMenuOpen] = useState<string | null>(null);
 
@@ -426,13 +428,20 @@ export const PlcDashboard: React.FC<PlcDashboardProps> = ({
           const hasSimulatedFault = plc.simulatedFault && plc.simulatedFault !== 'NONE';
           const machine = machines.find(m => m.id === plc.machineId);
           const isMenuOpen = cardMenuOpen === plc.id;
+          const machineAlerts = telemetryAlerts.filter(a => a.machineId === plc.machineId);
+          const hasTelemetryAlert = machineAlerts.length > 0;
+          const hasCriticalTelemetryAlert = machineAlerts.some(a => a.severite === 'CRITICAL');
 
           // Border color based on status or active simulated fault
           let cardBorderClass = isSelected
             ? 'border-sky-500 ring-1 ring-sky-500/50 bg-slate-900/90'
             : 'border-slate-800 hover:border-slate-700 bg-slate-900/60';
 
-          if (hasSimulatedFault || isOffline) {
+          if (hasCriticalTelemetryAlert) {
+            cardBorderClass = 'border-2 border-rose-500 shadow-2xl shadow-rose-950/80 bg-gradient-to-b from-rose-950/30 via-slate-900 to-slate-900 ring-2 ring-rose-500 animate-pulse';
+          } else if (hasTelemetryAlert) {
+            cardBorderClass = 'border-2 border-amber-500 shadow-xl shadow-amber-950/60 bg-gradient-to-b from-amber-950/20 via-slate-900 to-slate-900 ring-2 ring-amber-500/70 animate-pulse';
+          } else if (hasSimulatedFault || isOffline) {
             if (plc.simulatedFault === 'HIGH_LATENCY' || plc.simulatedFault === 'INTERMITTENT_LOSS') {
               cardBorderClass = 'border-amber-500/70 shadow-lg shadow-amber-950/20 bg-slate-900/90 ring-1 ring-amber-500/30';
             } else if (plc.simulatedFault === 'EXCEPTION_02' || plc.simulatedFault === 'ILLEGAL_DATA') {
@@ -504,6 +513,31 @@ export const PlcDashboard: React.FC<PlcDashboardProps> = ({
                   )}
                 </div>
               </div>
+
+              {/* TELEMETRY PROCESS THRESHOLD ALERT BANNER */}
+              {hasTelemetryAlert && (
+                <div className={`mt-2.5 p-2 rounded-lg border flex flex-col gap-1 text-[11px] animate-pulse ${
+                  hasCriticalTelemetryAlert
+                    ? 'bg-rose-600/90 text-white border-rose-400 shadow-md ring-1 ring-rose-300'
+                    : 'bg-amber-950/80 border-amber-500/80 text-amber-200 ring-1 ring-amber-400/50'
+                }`}>
+                  <div className="flex items-center justify-between font-mono">
+                    <span className="font-bold flex items-center gap-1.5 uppercase text-[10px]">
+                      <span className="relative flex h-2.5 w-2.5">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-white"></span>
+                      </span>
+                      <span>{hasCriticalTelemetryAlert ? '🚨 ALERTE SEUIL SÉCURITÉ' : '⚠️ AVERTISSEMENT SEUIL'}</span>
+                    </span>
+                    <span className="text-[9px] bg-black/40 px-1.5 py-0.2 rounded font-mono font-bold">{machineAlerts.length} anomalie(s)</span>
+                  </div>
+                  {machineAlerts.map(ma => (
+                    <div key={ma.id} className="text-[10px] font-mono pl-3 text-white truncate">
+                      • {ma.parametreNom} : <span className="font-bold underline decoration-rose-300">{ma.valeurActuelle} {ma.unite}</span> (seuil : {ma.valeurSeuil} {ma.unite})
+                    </div>
+                  ))}
+                </div>
+              )}
 
               {/* ACTIVE ALERT BANNER (ROBUSTNESS TEST) */}
               {(hasSimulatedFault || isOffline) && (
@@ -647,18 +681,32 @@ export const PlcDashboard: React.FC<PlcDashboardProps> = ({
                     <span className="font-mono text-[9px] text-slate-500">{plc.activeRegisters.length} tags</span>
                   </div>
                   <div className="grid grid-cols-2 gap-1.5 font-mono text-[10px]">
-                    {plc.activeRegisters.slice(0, 4).map((reg, rIdx) => (
-                      <div key={rIdx} className="bg-slate-950 px-2 py-1 rounded border border-slate-800 flex items-center justify-between">
-                        <span className="text-slate-400 text-[9px] truncate max-w-[70px]" title={reg.name}>
-                          {reg.address}
-                        </span>
-                        <span className="font-bold text-emerald-400">
-                          {typeof reg.currentValue === 'boolean' 
-                            ? (reg.currentValue ? 'TRUE' : 'FALSE')
-                            : `${reg.currentValue}${reg.unit ? ` ${reg.unit}` : ''}`}
-                        </span>
-                      </div>
-                    ))}
+                    {plc.activeRegisters.slice(0, 4).map((reg, rIdx) => {
+                      const isRegInAlert = machineAlerts.some(a => 
+                        (a.parametre === 'temperature' && (reg.name.toLowerCase().includes('temp') || reg.unit === '°C')) ||
+                        (a.parametre === 'pression' && (reg.name.toLowerCase().includes('press') || reg.unit === 'bar'))
+                      );
+
+                      return (
+                        <div 
+                          key={rIdx} 
+                          className={`px-2 py-1 rounded border flex items-center justify-between transition-all ${
+                            isRegInAlert
+                              ? 'bg-rose-950/90 border-rose-500 text-white font-bold animate-pulse shadow-sm shadow-rose-900 ring-1 ring-rose-400'
+                              : 'bg-slate-950 border-slate-800'
+                          }`}
+                        >
+                          <span className={`text-[9px] truncate max-w-[70px] ${isRegInAlert ? 'text-rose-200' : 'text-slate-400'}`} title={reg.name}>
+                            {reg.address}
+                          </span>
+                          <span className={`font-bold ${isRegInAlert ? 'text-white' : 'text-emerald-400'}`}>
+                            {typeof reg.currentValue === 'boolean' 
+                              ? (reg.currentValue ? 'TRUE' : 'FALSE')
+                              : `${reg.currentValue}${reg.unit ? ` ${reg.unit}` : ''} ${isRegInAlert ? '⚠️' : ''}`}
+                          </span>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               </div>

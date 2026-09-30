@@ -361,4 +361,81 @@ export interface DossierLotTracabilite {
   remarquesAudit?: string;
 }
 
+// ==========================================
+// TELEMETRY THRESHOLDS & ALERTS (CONNECTIVITÉ)
+// ==========================================
+export interface ParameterThresholdConfig {
+  enabled: boolean;
+  min?: number;
+  maxWarning: number;
+  maxCritical: number;
+  unit: string;
+}
+
+export interface MachineTelemetryThresholds {
+  machineId: number;
+  machineNom: string;
+  temperature?: ParameterThresholdConfig;
+  pression?: ParameterThresholdConfig;
+  cadence?: {
+    enabled: boolean;
+    minWarning?: number;
+    maxWarning?: number;
+    unit: string;
+  };
+}
+
+export type AlertSeverity = 'WARNING' | 'CRITICAL';
+export type ThresholdBreachType = 'HIGH_CRITICAL' | 'HIGH_WARNING' | 'LOW_CRITICAL' | 'LOW_WARNING';
+
+export interface TelemetryAlert {
+  id: string;
+  machineId: number;
+  machineNom: string;
+  parametre: 'temperature' | 'pression' | 'cadence';
+  parametreNom: string;
+  valeurActuelle: number;
+  valeurSeuil: number;
+  unite: string;
+  severite: AlertSeverity;
+  typeBreach: ThresholdBreachType;
+  message: string;
+  timestamp: string;
+}
+
+// ==========================================
+// MACHINE-TO-CLOUD DATA EXCHANGE LOGS (IIoT)
+// ==========================================
+export type CloudProtocol = 'MQTT_SPARKPLUG_B' | 'HTTPS_REST' | 'OPC_UA_PUBSUB' | 'WEBSOCKET_WSS';
+export type CloudFlowDirection = 'EDGE_TO_CLOUD' | 'CLOUD_TO_EDGE' | 'BIDIRECTIONAL';
+export type CloudLogStatus = 'SUCCESS' | 'WARNING' | 'ERROR' | 'RETRY';
+
+export interface PipelineLatencyBreakdown {
+  edgePackingMs: number;
+  tlsEncryptionMs: number;
+  networkWanRttMs: number;
+  cloudIngestionMs: number;
+}
+
+export interface MachineToCloudLogEntry {
+  id: string;
+  timestamp: string;
+  machineId: number;
+  machineNom: string;
+  protocol: CloudProtocol;
+  direction: CloudFlowDirection;
+  endpointOrTopic: string;
+  methodOrMessageType: string;
+  payloadBytes: number;
+  cloudLatencyMs: number;
+  status: CloudLogStatus;
+  responseCode: string | number;
+  summary: string;
+  headers?: Record<string, string>;
+  payloadJson: Record<string, any>;
+  pipelineBreakdown: PipelineLatencyBreakdown;
+  errorDetails?: string;
+  retryAttempt?: number;
+}
+
 

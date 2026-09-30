@@ -87,9 +87,16 @@ export const SynopticOverview: React.FC<SynopticOverviewProps> = ({
   const glycerol = articles.find(a => a.code === 'MP-GLY-99');
   const h2o2 = articles.find(a => a.code === 'MP-H2O2-30');
   const eau = articles.find(a => a.code === 'MP-EAU-OSM');
+  const flacon = articles.find(a => a.code === 'EMB-FLAC-1L');
+  const bouchon = articles.find(a => a.code === 'EMB-BOUCH-SPRAY');
 
   const cuveMelange = machines.find(m => m.type === 'CuveMelange') || machines[0];
   const remplisseuse = machines.find(m => m.type === 'Remplisseuse') || machines[2];
+  const etiqueteuse = machines.find(m => m.type === 'Etiqueteuse') || machines[4];
+
+  const tankCapacity = cuveMelange.capaciteMaxLitres || 5000;
+  const tankLevel = cuveMelange.niveauCuveLitres !== undefined ? cuveMelange.niveauCuveLitres : 3450;
+  const tankPercent = Math.min(100, Math.max(0, Math.round((tankLevel / tankCapacity) * 100)));
 
   const ofProgression = activeOf 
     ? Math.min(100, Math.round((activeOf.quantiteProduite / activeOf.quantiteCible) * 100)) 
@@ -629,7 +636,7 @@ export const SynopticOverview: React.FC<SynopticOverviewProps> = ({
                 <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
                   <div 
                     className="h-full bg-blue-500 rounded-full"
-                    style={{ width: '65%' }}
+                    style={{ width: `${Math.min(100, Math.round(((eau?.stockTheorique || 0) / 10000) * 100))}%` }}
                   />
                 </div>
               </div>
@@ -664,7 +671,7 @@ export const SynopticOverview: React.FC<SynopticOverviewProps> = ({
                 {/* Liquid fill */}
                 <div 
                   className="w-full bg-gradient-to-t from-cyan-600 to-sky-400 transition-all duration-700 relative"
-                  style={{ height: '69%' }}
+                  style={{ height: `${tankPercent}%` }}
                 >
                   {/* Wave effect */}
                   <div className="absolute top-0 left-0 right-0 h-1 bg-cyan-200/50 animate-pulse"></div>
@@ -675,10 +682,10 @@ export const SynopticOverview: React.FC<SynopticOverviewProps> = ({
                 </div>
                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                   <span className="text-xs font-mono font-bold text-white drop-shadow">
-                    3 450 L
+                    {tankLevel.toLocaleString('fr-FR')} L
                   </span>
                   <span className="text-[10px] text-cyan-200 drop-shadow">
-                    69% plein
+                    {tankPercent}% plein
                   </span>
                 </div>
               </div>
@@ -717,7 +724,7 @@ export const SynopticOverview: React.FC<SynopticOverviewProps> = ({
               <div className="bg-slate-900 p-2.5 rounded-lg border border-slate-800">
                 <div className="text-[11px] text-slate-400 mb-1">Cadence courante</div>
                 <div className="text-xl font-bold font-mono text-emerald-400 flex items-baseline gap-1">
-                  <span>920</span>
+                  <span>{remplisseuse.cadenceActuelle.toLocaleString('fr-FR')}</span>
                   <span className="text-xs text-slate-400 font-normal">flacons / h</span>
                 </div>
               </div>
@@ -725,11 +732,11 @@ export const SynopticOverview: React.FC<SynopticOverviewProps> = ({
               <div className="grid grid-cols-2 gap-2 text-center text-[11px]">
                 <div className="bg-slate-900/80 p-2 rounded border border-slate-800">
                   <div className="text-slate-400">Flacons 1L</div>
-                  <div className="font-mono text-slate-200 font-semibold">1 100 U</div>
+                  <div className="font-mono text-slate-200 font-semibold">{flacon?.stockTheorique.toLocaleString('fr-FR') || '1 100'} U</div>
                 </div>
                 <div className="bg-slate-900/80 p-2 rounded border border-slate-800">
                   <div className="text-slate-400">Bouchons Spray</div>
-                  <div className="font-mono text-slate-200 font-semibold">3 200 U</div>
+                  <div className="font-mono text-slate-200 font-semibold">{bouchon?.stockTheorique.toLocaleString('fr-FR') || '3 200'} U</div>
                 </div>
               </div>
             </div>
@@ -753,7 +760,14 @@ export const SynopticOverview: React.FC<SynopticOverviewProps> = ({
                 <span className="w-2 h-2 rounded-full bg-amber-500"></span>
                 <span>4. Étiquetage & Qualité</span>
               </span>
-              <span className="text-[10px] text-slate-400">Contrôle Vision</span>
+              <button
+                onClick={() => handleOpenEditMachine(etiqueteuse)}
+                className="px-2 py-0.5 rounded bg-slate-900 hover:bg-slate-800 text-sky-400 hover:text-white border border-slate-700 text-[10px] flex items-center gap-1 transition-colors"
+                title="Modifier / Configurer l'étiqueteuse"
+              >
+                <Settings className="w-3 h-3" />
+                <span>Configurer</span>
+              </button>
             </div>
 
             <div className="my-3 space-y-2.5">

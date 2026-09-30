@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, PackageCheck, AlertTriangle, Droplets, Check, ArrowRight } from 'lucide-react';
 import { OrdreFabrication, Article, Nomenclature } from '../types';
 
@@ -24,16 +24,24 @@ export const ProductionDeclarationModal: React.FC<ProductionDeclarationModalProp
   nomenclatures,
   onConfirmDeclaration
 }) => {
+  const [quantiteRealisee, setQuantiteRealisee] = useState<number>(
+    ofItem ? Math.max(50, ofItem.quantiteCible - ofItem.quantiteProduite) : 100
+  );
+  const [quantiteRebuts, setQuantiteRebuts] = useState<number>(2);
+  const [operateur, setOperateur] = useState<string>(ofItem?.operateur || 'Julien Mercier (Opérateur Chef)');
+
+  useEffect(() => {
+    if (ofItem) {
+      setQuantiteRealisee(Math.max(50, ofItem.quantiteCible - ofItem.quantiteProduite));
+      setOperateur(ofItem.operateur || 'Julien Mercier (Opérateur Chef)');
+      setQuantiteRebuts(2);
+    }
+  }, [ofItem]);
+
   if (!isOpen || !ofItem) return null;
 
   const article = articles.find(a => a.id === ofItem.articleId);
   const relevantNomenclatures = nomenclatures.filter(n => n.articleParentId === ofItem.articleId);
-
-  const [quantiteRealisee, setQuantiteRealisee] = useState<number>(
-    Math.max(50, ofItem.quantiteCible - ofItem.quantiteProduite)
-  );
-  const [quantiteRebuts, setQuantiteRebuts] = useState<number>(2);
-  const [operateur, setOperateur] = useState<string>(ofItem.operateur || 'Julien Mercier (Opérateur Chef)');
 
   // Calculate live preview of post-deduction
   const previews = relevantNomenclatures.map(n => {

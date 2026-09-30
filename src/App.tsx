@@ -27,6 +27,7 @@ import {
 } from './data/initialData';
 import { INITIAL_CONTROLES_QUALITE } from './data/qualitySpecs';
 import { MrpStockEngine } from './services/mrpService';
+import { evaluateTelemetryAlerts, loadTelemetryThresholds } from './utils/telemetryThresholds';
 import { Article, Nomenclature, CommandeClient, SuggestionAchat, BonReception, MouvementStock, OrdreFabrication, MachineLigne, OeeMetrics, InterventionMaintenance, ControleQualiteLot } from './types';
 import { CheckCircle2, AlertTriangle, Info, X, Factory } from 'lucide-react';
 import { BladyLogo } from './components/BladyLogo';
@@ -91,6 +92,9 @@ export default function App() {
   // Critical alerts count
   const criticalStockCount = articles.filter(a => a.estComposant && a.stockTheorique < a.seuilCritique).length;
   const qualityAlertCount = controlesQualite.filter(c => c.decision === 'EnQuarantaine' || c.decision === 'NonConforme').length;
+  const telemetryAlertCount = React.useMemo(() => {
+    return evaluateTelemetryAlerts(machines, loadTelemetryThresholds()).length;
+  }, [machines]);
 
   // Real-time synchronization with Firestore (Database and Auth)
   useEffect(() => {
@@ -135,9 +139,11 @@ export default function App() {
         prevMachines.map(m => {
           if (m.statut !== 'EnMarche') return m;
 
-          // Subtle natural fluctuation
+          // Subtle natural fluctuation proportional to nominal speed
+          const minCadence = Math.round(m.cadenceNominale * 0.82);
+          const maxCadence = Math.round(m.cadenceNominale * 1.02);
           const deltaCadence = Math.floor(Math.random() * 7) - 3;
-          const newCadence = Math.max(880, Math.min(960, m.cadenceActuelle + deltaCadence));
+          const newCadence = Math.max(minCadence, Math.min(maxCadence, m.cadenceActuelle + deltaCadence));
           
           let newTemp = m.temperatureC;
           if (m.temperatureC) {
@@ -634,6 +640,7 @@ export default function App() {
         onResetData={handleResetData}
         criticalAlertCount={criticalStockCount}
         qualityAlertCount={qualityAlertCount}
+        telemetryAlertCount={telemetryAlertCount}
       />
 
       {/* Main Content Area */}

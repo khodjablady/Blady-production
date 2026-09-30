@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Truck, Check, PackagePlus } from 'lucide-react';
 import { SuggestionAchat, Article } from '../types';
 
@@ -22,15 +22,22 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
   articles,
   onConfirmReceipt
 }) => {
-  if (!isOpen || !suggestion) return null;
-
-  const article = articles.find(a => a.id === suggestion.articleId);
-
-  const [quantiteRecue, setQuantiteRecue] = useState<number>(suggestion.quantiteSuggeree);
+  const [quantiteRecue, setQuantiteRecue] = useState<number>(suggestion?.quantiteSuggeree || 0);
   const [numeroLot, setNumeroLot] = useState<string>(
     `LOT-FOURN-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`
   );
   const [fournisseurNom, setFournisseurNom] = useState<string>('Fournisseur Agréé');
+
+  useEffect(() => {
+    if (suggestion) {
+      setQuantiteRecue(suggestion.quantiteSuggeree);
+      setNumeroLot(`LOT-FOURN-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`);
+    }
+  }, [suggestion]);
+
+  if (!isOpen || !suggestion) return null;
+
+  const article = articles.find(a => a.id === suggestion.articleId);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
