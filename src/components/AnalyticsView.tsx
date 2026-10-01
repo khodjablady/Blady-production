@@ -18,9 +18,10 @@ import {
   PieChart,
   Pie
 } from 'recharts';
-import { Article, OeeMetrics, CommandeClient } from '../types';
+import { Article, OeeMetrics, CommandeClient, OrdreFabrication } from '../types';
 import { generate30DaysHistory, DailyStockDataPoint, DailyOeeDataPoint } from '../data/analyticsHistoryData';
 import { INITIAL_COMMANDES_CLIENTS } from '../data/initialData';
+import { OeeHistoricalTrend30DaysChart } from './OeeHistoricalTrend30DaysChart';
 import { OeeWeeklyEvolutionChart } from './OeeWeeklyEvolutionChart';
 import { PerformanceTrendPredictor } from './PerformanceTrendPredictor';
 import { ProductCostVsRevenueSection } from './ProductCostVsRevenueSection';
@@ -49,6 +50,7 @@ interface AnalyticsViewProps {
   articles: Article[];
   oee: OeeMetrics;
   commandesClients?: CommandeClient[];
+  ordresFabrication?: OrdreFabrication[];
   onGoToErp?: () => void;
   onGoToMes?: () => void;
   onGoToCSharp?: () => void;
@@ -61,6 +63,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
   articles,
   oee,
   commandesClients,
+  ordresFabrication,
   onGoToErp,
   onGoToMes,
   onGoToCSharp
@@ -522,7 +525,17 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
         </div>
       </div>
 
-      {/* SECTION 1: 7-DAY OEE WEEKLY EVOLUTION CHART (RECHARTS) */}
+      {/* SECTION 1: 30-DAY OEE HISTORICAL TREND CHART (RECHARTS) */}
+      {(selectedCategory === 'all' || selectedCategory === 'oee' || selectedCategory === 'predictions') && (
+        <OeeHistoricalTrend30DaysChart
+          oeeHistory={oeeHistory}
+          currentOee={oee}
+          ordresFabrication={ordresFabrication}
+          onGoToMes={onGoToMes}
+        />
+      )}
+
+      {/* SECTION 1B: 7-DAY OEE WEEKLY EVOLUTION CHART (RECHARTS) */}
       {(selectedCategory === 'all' || selectedCategory === 'oee' || selectedCategory === 'predictions') && (
         <OeeWeeklyEvolutionChart currentOee={oee} onGoToMes={onGoToMes} />
       )}

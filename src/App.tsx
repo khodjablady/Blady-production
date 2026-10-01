@@ -759,6 +759,7 @@ export default function App() {
             articles={articles}
             oee={oee}
             commandesClients={commandesClients}
+            ordresFabrication={ordresFabrication}
             onGoToErp={() => setActiveTab('erp')}
             onGoToMes={() => setActiveTab('mes')}
             onGoToCSharp={() => setActiveTab('csharp')}
