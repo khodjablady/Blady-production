@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { BladyLogo } from './BladyLogo';
 import { useAuth } from '../context/AuthContext';
+import { AudioBackgroundPlayer } from './AudioBackgroundPlayer';
 
 interface NavbarProps {
   activeTab: 'synoptic' | 'erp' | 'mes' | 'planning' | 'quality' | 'traceability' | 'analytics' | 'connectivity' | 'csharp' | 'maintenance';
@@ -225,6 +226,9 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {/* Quick controls, database status & auth */}
           <div className="flex items-center space-x-2.5">
+            {/* Musique douce d'ambiance avec contrôle de volume */}
+            <AudioBackgroundPlayer />
+
             {/* Démo HTML Autonome Link */}
             <a
               href="/monusine-standalone.html"

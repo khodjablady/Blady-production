@@ -98,6 +98,9 @@ export default function App() {
 
   // Real-time synchronization with Firestore (Database and Auth)
   useEffect(() => {
+    // Only attach onSnapshot listeners if auth is ready and user is authenticated
+    if (!user) return;
+
     const unsubOfs = subscribeToOrdresFabrication((cloudOfs) => {
       if (cloudOfs && cloudOfs.length > 0) {
         setOrdresFabrication(cloudOfs);
@@ -128,7 +131,7 @@ export default function App() {
       unsubMaint();
       unsubQc();
     };
-  }, []);
+  }, [user]);
 
   // Background industrial telemetry simulation loop
   useEffect(() => {
