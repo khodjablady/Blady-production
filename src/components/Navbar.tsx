@@ -63,7 +63,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <span>BladyProduction</span>
                 </span>
                 <span className="px-2 py-0.5 text-xs font-semibold rounded bg-amber-500/15 text-amber-300 border border-amber-500/30">
-                  SNC Khodja
+                  KHODJA & Co.
                 </span>
                 <span className="px-1.5 py-0.5 text-[10px] font-mono rounded bg-sky-500/20 text-sky-400 border border-sky-500/30">
                   .NET 8/9

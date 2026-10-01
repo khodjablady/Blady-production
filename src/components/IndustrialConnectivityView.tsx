@@ -29,7 +29,8 @@ import {
   BellRing,
   Cloud,
   TrendingUp,
-  LineChart
+  LineChart,
+  Info
 } from 'lucide-react';
 import { 
   MachineLigne, 
@@ -39,10 +40,12 @@ import {
   SimulatedFaultType,
   MachineTelemetryThresholds,
   TelemetryAlert,
-  MachineToCloudLogEntry
+  MachineToCloudLogEntry,
+  InterventionMaintenance
 } from '../types';
 import { INITIAL_PLCS, INITIAL_MODBUS_LOGS, generateModbusTelegram } from '../data/plcData';
 import { INITIAL_M2C_LOGS, generateMachineToCloudLog } from '../data/machineToCloudData';
+import { INITIAL_INTERVENTIONS } from '../data/initialData';
 import { 
   loadTelemetryThresholds, 
   saveTelemetryThresholds, 
@@ -61,22 +64,36 @@ import { TelemetryThresholdsPanel } from './TelemetryThresholdsPanel';
 import { TelemetryAlertBanner } from './TelemetryAlertBanner';
 import { MachineToCloudLogViewer } from './MachineToCloudLogViewer';
 import { TelemetryD3TimeSeriesChart } from './TelemetryD3TimeSeriesChart';
+import { MachineAdvancedDetailsModal } from './MachineAdvancedDetailsModal';
 
 interface IndustrialConnectivityViewProps {
   machines: MachineLigne[];
   onMachineStateChange: (machineId: number, newStatut: MachineLigne['statut']) => void;
   onUpdateMachine?: (updatedMachine: MachineLigne) => void;
   isLiveSimulating: boolean;
+  interventions?: InterventionMaintenance[];
+  onGoToMaintenance?: () => void;
 }
 
 export const IndustrialConnectivityView: React.FC<IndustrialConnectivityViewProps> = ({
   machines,
   onMachineStateChange,
   onUpdateMachine,
-  isLiveSimulating
+  isLiveSimulating,
+  interventions = INITIAL_INTERVENTIONS,
+  onGoToMaintenance
 }) => {
   // Navigation tabs inside connectivity
   const [subTab, setSubTab] = useState<'plc-modbus' | 'opc-ua' | 'm2c' | 'curves' | 'machines' | 'thresholds' | 'csharp'>('plc-modbus');
+
+  // Advanced Details modal state
+  const [advancedDetailsMachine, setAdvancedDetailsMachine] = useState<MachineLigne | null>(null);
+  const [isAdvancedDetailsOpen, setIsAdvancedDetailsOpen] = useState<boolean>(false);
+
+  const handleOpenAdvancedDetails = (machine: MachineLigne) => {
+    setAdvancedDetailsMachine(machine);
+    setIsAdvancedDetailsOpen(true);
+  };
 
   // D3 Time-Series Telemetry History state
   const [telemetryHistory, setTelemetryHistory] = useState<Record<number, TelemetryDataPoint[]>>(() => 
@@ -1482,6 +1499,13 @@ export const IndustrialConnectivityView: React.FC<IndustrialConnectivityViewProp
                           <h4 className="text-sm font-bold text-white truncate max-w-[170px]" title={m.nom}>
                             {m.nom}
                           </h4>
+                          <button
+                            onClick={() => handleOpenAdvancedDetails(m)}
+                            className="p-1 rounded-lg bg-slate-800 hover:bg-sky-600/30 text-slate-400 hover:text-sky-300 border border-slate-700/60 transition-colors"
+                            title="Ouvrir les détails avancés (heures de marche, alertes, maintenance)"
+                          >
+                            <Info className="w-3.5 h-3.5" />
+                          </button>
                         </div>
                         <span className="text-[11px] text-slate-400 block mt-1">
                           Type : <strong className="text-slate-200">{m.type}</strong>
@@ -1628,7 +1652,16 @@ export const IndustrialConnectivityView: React.FC<IndustrialConnectivityViewProp
                       {m.statut === 'EnMarche' ? 'Arrêter / Nettoyer' : 'Démarrer'}
                     </button>
 
-                    <div className="flex items-center space-x-1.5">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <button
+                        onClick={() => handleOpenAdvancedDetails(m)}
+                        className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-750 text-sky-300 hover:text-white border border-slate-700 hover:border-sky-500/50 rounded-xl text-xs font-semibold flex items-center space-x-1.5 transition-all hover:scale-[1.02]"
+                        title="Consulter les statistiques avancées (heures de marche, alertes, dernière maintenance)"
+                      >
+                        <Info className="w-3.5 h-3.5 text-sky-400" />
+                        <span>Détails avancés</span>
+                      </button>
+
                       <button
                         onClick={() => {
                           setSelectedCurveMachineId(m.id);
@@ -1761,6 +1794,25 @@ public class ModbusTcpMasterClient : IModbusTcpMasterClient
           setEditingMachine(null);
         }}
         onSave={handleSaveMachine}
+      />
+
+      {/* Machine Advanced Details Modal */}
+      <MachineAdvancedDetailsModal
+        isOpen={isAdvancedDetailsOpen}
+        machine={advancedDetailsMachine}
+        onClose={() => {
+          setIsAdvancedDetailsOpen(false);
+          setAdvancedDetailsMachine(null);
+        }}
+        interventions={interventions}
+        activeAlerts={activeAlerts}
+        thresholds={advancedDetailsMachine ? thresholds[advancedDetailsMachine.id] : undefined}
+        onNavigateToMaintenance={onGoToMaintenance}
+        onNavigateToCurves={(machineId) => {
+          setSelectedCurveMachineId(machineId);
+          setSubTab('curves');
+        }}
+        onNavigateToThresholds={() => setSubTab('thresholds')}
       />
 
     </div>

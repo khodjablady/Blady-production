@@ -182,7 +182,7 @@ export const AuthScreen: React.FC = () => {
               <div className="flex items-center space-x-2">
                 <h1 className="text-2xl font-black tracking-tight text-white">BladyProduction</h1>
                 <span className="px-2 py-0.5 text-[11px] font-bold rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                  SNC Khodja
+                  KHODJA & Co.
                 </span>
                 <span className="px-2 py-0.5 text-[11px] font-bold rounded-md bg-sky-500/20 text-sky-400 border border-sky-500/30">
                   .NET 8/9

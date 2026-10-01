@@ -779,6 +779,8 @@ export default function App() {
             onMachineStateChange={handleMachineStateChange}
             onUpdateMachine={handleUpdateMachine}
             isLiveSimulating={isSimulating}
+            interventions={interventions}
+            onGoToMaintenance={() => setActiveTab('maintenance')}
           />
         )}
 
