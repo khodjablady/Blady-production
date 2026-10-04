@@ -19,8 +19,16 @@
         },
         "role": {
           "type": "string",
-          "enum": ["operator", "supervisor", "admin"],
+          "enum": ["operator", "supervisor", "admin", "quality", "maintenance"],
           "description": "System role for RBAC"
+        },
+        "jobTitle": {
+          "type": "string",
+          "description": "User position or responsibility in plant"
+        },
+        "modulePermissions": {
+          "type": "object",
+          "description": "Granular module permissions mapping"
         },
         "createdAt": {
           "type": "string",

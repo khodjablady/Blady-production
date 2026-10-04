@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { BladyLogo } from './BladyLogo';
 import { useAuth, getFirebaseAuthErrorMessage } from '../context/AuthContext';
+import { UserRole } from '../types';
 
 export const AuthScreen: React.FC = () => {
   const { 
@@ -40,7 +41,7 @@ export const AuthScreen: React.FC = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
-  const [role, setRole] = useState<'operator' | 'supervisor' | 'admin'>('supervisor');
+  const [role, setRole] = useState<UserRole>('admin');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
 
@@ -151,10 +152,17 @@ export const AuthScreen: React.FC = () => {
   };
 
   // Quick fill demo credentials and login
-  const handleQuickDemo = (demoRole: 'operator' | 'supervisor' | 'admin', name: string, demoEmail: string) => {
+  const handleQuickDemo = (demoRole: UserRole, name: string, demoEmail: string) => {
     setErrorMessage(null);
-    setSuccessMessage(`Connexion en tant que ${name}...`);
+    setSuccessMessage(`Connexion en cours avec le profil ${name}...`);
     loginWithDemo(demoRole, name, demoEmail);
+  };
+
+  const handleFillAdminCredentials = () => {
+    setEmail('infos@blady-product.com');
+    setPassword('TayakOut24061964');
+    setErrorMessage(null);
+    setSuccessMessage('Identifiants administrateur appliqués. Cliquez sur "Se connecter au système".');
   };
 
   return (
@@ -245,13 +253,41 @@ export const AuthScreen: React.FC = () => {
           </div>
 
           {/* Quick Demo Access Bar */}
-          <div className="bg-slate-900/50 border border-slate-800/60 rounded-2xl p-3.5 space-y-2">
+          <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 space-y-2.5">
             <div className="flex items-center justify-between text-xs">
-              <span className="font-semibold text-slate-300 flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                Accès Rapide Test & Démonstration :
+              <span className="font-semibold text-slate-200 flex items-center gap-1.5">
+                <Sparkles className="w-4 h-4 text-amber-400" />
+                <span>Accès Rapide par Rôle Usine :</span>
               </span>
+              <span className="text-[10px] text-slate-400 font-mono">1-Clic Instantané</span>
             </div>
+
+            {/* Featured Primary Admin Button */}
+            <button
+              type="button"
+              onClick={() => handleQuickDemo('admin', 'Zahir KHODJA (Directeur Général & Administrateur Système)', 'infos@blady-product.com')}
+              className="w-full flex items-center justify-between p-2.5 rounded-xl bg-gradient-to-r from-rose-950/80 to-slate-950/90 hover:from-rose-900/90 hover:to-slate-900 border border-rose-500/50 hover:border-rose-400 text-left transition-all shadow-md group"
+            >
+              <div className="flex items-center space-x-2.5">
+                <div className="p-1.5 rounded-lg bg-rose-500/20 text-rose-400 border border-rose-500/30 group-hover:scale-105 transition-transform">
+                  <KeyRound className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="font-bold text-xs text-rose-200 flex items-center gap-1.5">
+                    <span>Administrateur Système (Pleins Pouvoirs)</span>
+                    <span className="text-[9px] bg-rose-900/80 text-rose-300 px-1.5 py-0.2 rounded border border-rose-700">
+                      Gestion RBAC & Droits
+                    </span>
+                  </div>
+                  <div className="text-[10px] text-slate-400">
+                    Zahir KHODJA • infos@blady-product.com (Tous les modules)
+                  </div>
+                </div>
+              </div>
+              <ArrowRight className="w-4 h-4 text-rose-400 group-hover:translate-x-0.5 transition-transform shrink-0" />
+            </button>
+
+            {/* Other Factory Roles Grid */}
             <div className="grid grid-cols-2 gap-2 text-xs">
               <button
                 type="button"
@@ -260,7 +296,7 @@ export const AuthScreen: React.FC = () => {
               >
                 <div>
                   <div className="font-semibold text-[11px] text-sky-300">Superviseur MES</div>
-                  <div className="text-[10px] text-slate-400">Accès TRS & Déclarations</div>
+                  <div className="text-[9px] text-slate-400">OF & Déclarations</div>
                 </div>
                 <ArrowRight className="w-3.5 h-3.5 text-sky-400" />
               </button>
@@ -272,9 +308,33 @@ export const AuthScreen: React.FC = () => {
               >
                 <div>
                   <div className="font-semibold text-[11px] text-emerald-300">Opérateur Machine</div>
-                  <div className="text-[10px] text-slate-400">Pilotage Ligne 01</div>
+                  <div className="text-[9px] text-slate-400">Pilotage Ligne 01</div>
                 </div>
                 <ArrowRight className="w-3.5 h-3.5 text-emerald-400" />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleQuickDemo('quality', 'Sarah Benali (Qualité)', 'qualite@khodja-co.com')}
+                className="flex items-center justify-between p-2 rounded-xl bg-slate-950/80 hover:bg-slate-800 border border-slate-800 hover:border-purple-500/50 text-slate-300 hover:text-white transition-all text-left"
+              >
+                <div>
+                  <div className="font-semibold text-[11px] text-purple-300">Responsable Qualité</div>
+                  <div className="text-[9px] text-slate-400">Lots & Conformité</div>
+                </div>
+                <ArrowRight className="w-3.5 h-3.5 text-purple-400" />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleQuickDemo('maintenance', 'Karim Meziane (Maintenance)', 'maintenance@khodja-co.com')}
+                className="flex items-center justify-between p-2 rounded-xl bg-slate-950/80 hover:bg-slate-800 border border-slate-800 hover:border-amber-500/50 text-slate-300 hover:text-white transition-all text-left"
+              >
+                <div>
+                  <div className="font-semibold text-[11px] text-amber-300">Maintenance Ind.</div>
+                  <div className="text-[9px] text-slate-400">Interventions & MTBF</div>
+                </div>
+                <ArrowRight className="w-3.5 h-3.5 text-amber-400" />
               </button>
             </div>
           </div>
@@ -392,6 +452,24 @@ export const AuthScreen: React.FC = () => {
             {mode === 'login' && (
               <form onSubmit={handleLoginSubmit} className="space-y-4">
                 
+                {/* Admin Quick Credentials Fill Helper */}
+                <div className="bg-rose-950/40 border border-rose-800/60 rounded-2xl p-3 flex items-center justify-between text-xs">
+                  <div className="flex items-center space-x-2">
+                    <KeyRound className="w-4 h-4 text-rose-400 shrink-0" />
+                    <div>
+                      <span className="font-semibold text-rose-200 block">Compte Administrateur Préconfiguré (Zahir KHODJA)</span>
+                      <span className="text-[10px] text-slate-400">infos@blady-product.com • Mot de passe : TayakOut24061964</span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleFillAdminCredentials}
+                    className="px-2.5 py-1 rounded-lg bg-rose-900/60 hover:bg-rose-800 text-rose-200 border border-rose-700 text-[11px] font-semibold transition-colors shrink-0"
+                  >
+                    Préremplir
+                  </button>
+                </div>
+
                 {/* Email Field */}
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 mb-1.5">
@@ -546,47 +624,73 @@ export const AuthScreen: React.FC = () => {
 
                 {/* Role Selection */}
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
-                    Rôle & Droits d'accès d'usine
+                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                    Rôle Système & Niveau de Droits
                   </label>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     <button
                       type="button"
-                      onClick={() => setRole('operator')}
-                      className={`p-2 rounded-xl border text-center transition-all ${
-                        role === 'operator'
-                          ? 'bg-sky-600/30 border-sky-500 text-sky-200'
+                      onClick={() => setRole('admin')}
+                      className={`p-2 rounded-xl border text-left transition-all ${
+                        role === 'admin'
+                          ? 'bg-rose-950/70 border-rose-500 text-rose-200 shadow-sm'
                           : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:text-slate-200'
                       }`}
                     >
-                      <div className="text-[11px] font-bold">Opérateur</div>
-                      <div className="text-[9px] text-slate-400">Machine L01</div>
+                      <div className="text-[11px] font-bold text-rose-300">Administrateur</div>
+                      <div className="text-[9px] text-slate-400">Gestion des Droits & RBAC</div>
                     </button>
 
                     <button
                       type="button"
                       onClick={() => setRole('supervisor')}
-                      className={`p-2 rounded-xl border text-center transition-all ${
+                      className={`p-2 rounded-xl border text-left transition-all ${
                         role === 'supervisor'
-                          ? 'bg-sky-600/30 border-sky-500 text-sky-200'
+                          ? 'bg-sky-950/70 border-sky-500 text-sky-200 shadow-sm'
                           : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:text-slate-200'
                       }`}
                     >
-                      <div className="text-[11px] font-bold">Superviseur</div>
-                      <div className="text-[9px] text-slate-400">MES & TRS</div>
+                      <div className="text-[11px] font-bold text-sky-300">Superviseur</div>
+                      <div className="text-[9px] text-slate-400">MES, ERP & Planning</div>
                     </button>
 
                     <button
                       type="button"
-                      onClick={() => setRole('admin')}
-                      className={`p-2 rounded-xl border text-center transition-all ${
-                        role === 'admin'
-                          ? 'bg-sky-600/30 border-sky-500 text-sky-200'
+                      onClick={() => setRole('operator')}
+                      className={`p-2 rounded-xl border text-left transition-all ${
+                        role === 'operator'
+                          ? 'bg-emerald-950/70 border-emerald-500 text-emerald-200 shadow-sm'
                           : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:text-slate-200'
                       }`}
                     >
-                      <div className="text-[11px] font-bold">Production</div>
-                      <div className="text-[9px] text-slate-400">Admin ERP</div>
+                      <div className="text-[11px] font-bold text-emerald-300">Opérateur</div>
+                      <div className="text-[9px] text-slate-400">Saisie Déclarations L01</div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setRole('quality')}
+                      className={`p-2 rounded-xl border text-left transition-all ${
+                        role === 'quality'
+                          ? 'bg-purple-950/70 border-purple-500 text-purple-200 shadow-sm'
+                          : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      <div className="text-[11px] font-bold text-purple-300">Qualité</div>
+                      <div className="text-[9px] text-slate-400">Lots & Conformité</div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setRole('maintenance')}
+                      className={`p-2 rounded-xl border text-left transition-all ${
+                        role === 'maintenance'
+                          ? 'bg-amber-950/70 border-amber-500 text-amber-200 shadow-sm'
+                          : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      <div className="text-[11px] font-bold text-amber-300">Maintenance</div>
+                      <div className="text-[9px] text-slate-400">Interventions & IoT</div>
                     </button>
                   </div>
                 </div>

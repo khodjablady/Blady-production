@@ -13,6 +13,7 @@ import { TraceabilityView } from './components/TraceabilityView';
 import { ProductionDeclarationModal } from './components/ProductionDeclarationModal';
 import { ReceiptModal } from './components/ReceiptModal';
 import { NewOfModal } from './components/NewOfModal';
+import { UserRoleManagementModal } from './components/UserRoleManagementModal';
 import { 
   INITIAL_ARTICLES, 
   INITIAL_NOMENCLATURES, 
@@ -47,7 +48,16 @@ import {
 } from './services/firestoreService';
 
 export default function App() {
-  const { user, profile, loading } = useAuth();
+  const { 
+    user, 
+    profile, 
+    loading,
+    usersList,
+    updateUserAccount,
+    createUserAccount,
+    deleteUserAccount,
+    switchUserAccount
+  } = useAuth();
 
   // Navigation
   const [activeTab, setActiveTab] = useState<'synoptic' | 'erp' | 'mes' | 'planning' | 'quality' | 'traceability' | 'analytics' | 'connectivity' | 'csharp' | 'maintenance'>('synoptic');
@@ -72,6 +82,7 @@ export default function App() {
   const [isReceiptModalOpen, setIsReceiptModalOpen] = useState<boolean>(false);
   const [selectedSuggestionForReceipt, setSelectedSuggestionForReceipt] = useState<SuggestionAchat | undefined>(undefined);
   const [isNewOfModalOpen, setIsNewOfModalOpen] = useState<boolean>(false);
+  const [isUserManagementOpen, setIsUserManagementOpen] = useState<boolean>(false);
 
   // In-app notifications
   const [notification, setNotification] = useState<{ message: string; type: 'success' | 'warning' | 'info' } | null>({
@@ -644,6 +655,7 @@ export default function App() {
         criticalAlertCount={criticalStockCount}
         qualityAlertCount={qualityAlertCount}
         telemetryAlertCount={telemetryAlertCount}
+        onOpenUserManagement={() => setIsUserManagementOpen(true)}
       />
 
       {/* Main Content Area */}
@@ -822,6 +834,30 @@ export default function App() {
         onClose={() => setIsNewOfModalOpen(false)}
         articles={articles}
         onConfirmCreateOf={handleConfirmCreateOf}
+      />
+
+      {/* RBAC User, Role & Rights Management Modal */}
+      <UserRoleManagementModal
+        isOpen={isUserManagementOpen}
+        onClose={() => setIsUserManagementOpen(false)}
+        usersList={usersList}
+        onUpdateUser={(updated) => {
+          updateUserAccount(updated);
+          showNotification(`Droits et permissions mis à jour pour ${updated.displayName} (${updated.role}).`, 'success');
+        }}
+        onCreateUser={(newUser) => {
+          createUserAccount(newUser);
+          showNotification(`Compte créé : ${newUser.displayName} (${newUser.role}). Droits actifs immédiatement.`, 'success');
+        }}
+        onDeleteUser={(uid) => {
+          deleteUserAccount(uid);
+          showNotification("Compte utilisateur supprimé avec succès.", 'info');
+        }}
+        onSwitchUser={(switched) => {
+          switchUserAccount(switched);
+          setIsUserManagementOpen(false);
+          showNotification(`Session active basculée sur : ${switched.displayName} (${switched.role}).`, 'info');
+        }}
       />
 
       {/* Footer */}

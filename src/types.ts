@@ -438,4 +438,52 @@ export interface MachineToCloudLogEntry {
   retryAttempt?: number;
 }
 
+// ==========================================
+// RBAC & MODULE PERMISSIONS
+// ==========================================
+export type AppModuleId = 
+  | 'synoptic'
+  | 'erp'
+  | 'mes'
+  | 'planning'
+  | 'quality'
+  | 'traceability'
+  | 'analytics'
+  | 'connectivity'
+  | 'maintenance'
+  | 'csharp'
+  | 'admin';
+
+export type PermissionLevel = 'none' | 'read' | 'write' | 'admin';
+
+export type UserRole = 'admin' | 'supervisor' | 'operator' | 'quality' | 'maintenance';
+
+export interface ModulePermissionMap {
+  synoptic: PermissionLevel;
+  erp: PermissionLevel;
+  mes: PermissionLevel;
+  planning: PermissionLevel;
+  quality: PermissionLevel;
+  traceability: PermissionLevel;
+  analytics: PermissionLevel;
+  connectivity: PermissionLevel;
+  maintenance: PermissionLevel;
+  csharp: PermissionLevel;
+  admin: PermissionLevel;
+}
+
+export interface UserAccount {
+  uid: string;
+  email: string;
+  displayName: string;
+  role: UserRole;
+  active: boolean;
+  createdAt: string;
+  lastLogin?: string;
+  avatarColor?: string;
+  jobTitle?: string;
+  modulePermissions: ModulePermissionMap;
+}
+
+
 

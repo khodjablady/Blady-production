@@ -16,10 +16,19 @@ service cloud.firestore {
 
     function isValidUser(data) {
       return data.keys().hasAll(['uid', 'email', 'role'])
-        && data.keys().hasOnly(['uid', 'email', 'displayName', 'role', 'createdAt'])
-        && data.uid is string && data.uid == request.auth.uid
+        && data.keys().hasOnly(['uid', 'email', 'displayName', 'role', 'createdAt', 'jobTitle', 'modulePermissions'])
+        && data.uid is string
         && data.email is string && data.email.size() > 0 && data.email.size() <= 254
-        && data.role in ['operator', 'supervisor', 'admin'];
+        && data.role in ['operator', 'supervisor', 'admin', 'quality', 'maintenance'];
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'infos@blady-product.com' ||
+        request.auth.token.email == 'admin@blady-product.com' ||
+        request.auth.token.email == 'admin@khodja-co.com' ||
+        request.auth.token.email == 'admin@bladyproduction.fr'
+      );
     }
 
     function isValidOf(data) {
@@ -76,11 +85,11 @@ service cloud.firestore {
 
     // User profiles
     match /users/{userId} {
-      allow get: if isUser(userId);
-      allow create: if isUser(userId) && isValidId(userId) && isValidUser(request.resource.data);
-      allow update: if isUser(userId) && isValidId(userId) && isValidUser(request.resource.data)
-        && request.resource.data.uid == resource.data.uid;
-      allow delete: if false;
+      allow get: if isUser(userId) || isAdmin();
+      allow list: if isAdmin();
+      allow create: if (isUser(userId) || isAdmin()) && isValidId(userId) && isValidUser(request.resource.data);
+      allow update: if (isUser(userId) || isAdmin()) && isValidId(userId) && isValidUser(request.resource.data);
+      allow delete: if isAdmin() && userId != request.auth.uid;
     }
 
     // Manufacturing Orders

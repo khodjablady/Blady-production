@@ -20,7 +20,8 @@ import {
   ExternalLink,
   FileText,
   FlaskConical,
-  GitFork
+  GitFork,
+  ShieldCheck
 } from 'lucide-react';
 import { BladyLogo } from './BladyLogo';
 import { useAuth } from '../context/AuthContext';
@@ -35,6 +36,7 @@ interface NavbarProps {
   criticalAlertCount: number;
   qualityAlertCount?: number;
   telemetryAlertCount?: number;
+  onOpenUserManagement?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -45,7 +47,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   onResetData,
   criticalAlertCount,
   qualityAlertCount = 0,
-  telemetryAlertCount = 0
+  telemetryAlertCount = 0,
+  onOpenUserManagement
 }) => {
   const { user, profile, dbConnected, loginWithGoogle, logout } = useAuth();
   return (
@@ -252,13 +255,37 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse ml-0.5"></span>
             </div>
 
+            {/* Admin RBAC Button (Exclusive to Administrator) */}
+            {profile?.role === 'admin' && onOpenUserManagement && (
+              <button
+                id="btn-navbar-admin-rbac"
+                onClick={onOpenUserManagement}
+                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-gradient-to-r from-rose-950/90 to-slate-900 border border-rose-500/70 hover:border-rose-400 text-rose-200 hover:text-white transition-all shadow-md shadow-rose-950/40"
+                title="Gérer les utilisateurs, les rôles et les droits par module"
+              >
+                <ShieldCheck className="w-3.5 h-3.5 text-rose-400" />
+                <span className="hidden sm:inline">Gestion Droits (RBAC)</span>
+              </button>
+            )}
+
             {/* Auth / User profile */}
             {user ? (
-              <div className="flex items-center space-x-2 bg-slate-950/80 border border-slate-800 px-2.5 py-1 rounded-lg text-xs">
+              <div 
+                className="flex items-center space-x-2 bg-slate-950/80 border border-slate-800 px-2.5 py-1 rounded-lg text-xs cursor-pointer hover:border-slate-700 transition-colors"
+                onClick={() => {
+                  if (profile?.role === 'admin' && onOpenUserManagement) {
+                    onOpenUserManagement();
+                  }
+                }}
+                title={profile?.role === 'admin' ? "Cliquez pour ouvrir la console d'administration" : undefined}
+              >
                 {user.photoURL ? (
                   <img src={user.photoURL} alt={user.displayName || 'User'} className="w-5 h-5 rounded-full" />
                 ) : (
-                  <div className="w-5 h-5 rounded-full bg-sky-700 flex items-center justify-center text-[10px] text-white font-bold">
+                  <div 
+                    className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] text-white font-bold"
+                    style={{ backgroundColor: profile?.role === 'admin' ? '#f43f5e' : '#0284c7' }}
+                  >
                     {user.displayName ? user.displayName.charAt(0).toUpperCase() : 'U'}
                   </div>
                 )}
@@ -266,13 +293,16 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <div className="text-[11px] font-semibold text-white leading-tight truncate max-w-[100px]">
                     {user.displayName || user.email?.split('@')[0]}
                   </div>
-                  <div className="text-[9px] text-sky-400 font-mono capitalize">
-                    {profile?.role || 'Opérateur'}
+                  <div className={`text-[9px] font-mono capitalize ${profile?.role === 'admin' ? 'text-rose-400 font-bold' : 'text-sky-400'}`}>
+                    {profile?.role === 'admin' ? 'Administrateur' : (profile?.role || 'Opérateur')}
                   </div>
                 </div>
                 <button
                   id="btn-navbar-logout"
-                  onClick={logout}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    logout();
+                  }}
                   className="flex items-center space-x-1 text-slate-400 hover:text-rose-400 p-1 rounded-md hover:bg-slate-900 border border-transparent hover:border-rose-900/40 transition-colors ml-1"
                   title="Se déconnecter et retourner à l'écran de connexion"
                 >
