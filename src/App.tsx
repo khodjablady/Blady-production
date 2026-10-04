@@ -760,9 +760,12 @@ export default function App() {
             oee={oee}
             commandesClients={commandesClients}
             ordresFabrication={ordresFabrication}
+            machines={machines}
+            interventions={interventions}
             onGoToErp={() => setActiveTab('erp')}
             onGoToMes={() => setActiveTab('mes')}
             onGoToCSharp={() => setActiveTab('csharp')}
+            onGoToMaintenance={() => setActiveTab('maintenance')}
           />
         )}
 

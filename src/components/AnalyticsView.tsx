@@ -18,13 +18,14 @@ import {
   PieChart,
   Pie
 } from 'recharts';
-import { Article, OeeMetrics, CommandeClient, OrdreFabrication } from '../types';
+import { Article, OeeMetrics, CommandeClient, OrdreFabrication, MachineLigne, InterventionMaintenance } from '../types';
 import { generate30DaysHistory, DailyStockDataPoint, DailyOeeDataPoint } from '../data/analyticsHistoryData';
 import { INITIAL_COMMANDES_CLIENTS } from '../data/initialData';
 import { OeeHistoricalTrend30DaysChart } from './OeeHistoricalTrend30DaysChart';
 import { OeeWeeklyEvolutionChart } from './OeeWeeklyEvolutionChart';
 import { PerformanceTrendPredictor } from './PerformanceTrendPredictor';
 import { ProductCostVsRevenueSection } from './ProductCostVsRevenueSection';
+import { MachineAvailabilityView } from './MachineAvailabilityView';
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -51,22 +52,28 @@ interface AnalyticsViewProps {
   oee: OeeMetrics;
   commandesClients?: CommandeClient[];
   ordresFabrication?: OrdreFabrication[];
+  machines?: MachineLigne[];
+  interventions?: InterventionMaintenance[];
   onGoToErp?: () => void;
   onGoToMes?: () => void;
   onGoToCSharp?: () => void;
+  onGoToMaintenance?: () => void;
 }
 
 type PeriodDays = 7 | 14 | 30;
-type ViewCategory = 'all' | 'oee' | 'predictions' | 'stocks' | 'costs' | 'correlation';
+type ViewCategory = 'all' | 'oee' | 'machines' | 'predictions' | 'stocks' | 'costs' | 'correlation';
 
 export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
   articles,
   oee,
   commandesClients,
   ordresFabrication,
+  machines,
+  interventions,
   onGoToErp,
   onGoToMes,
-  onGoToCSharp
+  onGoToCSharp,
+  onGoToMaintenance
 }) => {
   const [period, setPeriod] = useState<PeriodDays>(30);
   const [selectedCategory, setSelectedCategory] = useState<ViewCategory>('all');
@@ -322,6 +329,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
                 [
                   { id: 'all', label: 'Vue Globale' },
                   { id: 'oee', label: 'MES (OEE / TRS)' },
+                  { id: 'machines', label: 'Disponibilité Machines' },
                   { id: 'predictions', label: 'Prédictions J+3' },
                   { id: 'stocks', label: 'ERP (Stocks)' },
                   { id: 'costs', label: 'Rentabilité & Coûts' },
@@ -531,6 +539,17 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
           oeeHistory={oeeHistory}
           currentOee={oee}
           ordresFabrication={ordresFabrication}
+          onGoToMes={onGoToMes}
+        />
+      )}
+
+      {/* SECTION: MACHINE AVAILABILITY VS DOWNTIME BY MACHINE (RECHARTS) */}
+      {(selectedCategory === 'all' || selectedCategory === 'machines' || selectedCategory === 'oee') && (
+        <MachineAvailabilityView
+          machines={machines}
+          interventions={interventions}
+          currentOee={oee}
+          onGoToMaintenance={onGoToMaintenance}
           onGoToMes={onGoToMes}
         />
       )}
