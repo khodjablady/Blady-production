@@ -14,6 +14,8 @@ import { ProductionDeclarationModal } from './components/ProductionDeclarationMo
 import { ReceiptModal } from './components/ReceiptModal';
 import { NewOfModal } from './components/NewOfModal';
 import { UserRoleManagementModal } from './components/UserRoleManagementModal';
+import { AccessDeniedView } from './components/AccessDeniedView';
+import { hasModuleAccess } from './data/rbacData';
 import { 
   INITIAL_ARTICLES, 
   INITIAL_NOMENCLATURES, 
@@ -642,6 +644,11 @@ export default function App() {
     return <AuthScreen />;
   }
 
+  const isCurrentTabAllowed = (): boolean => {
+    if (!profile || profile.role === 'admin') return true;
+    return hasModuleAccess(profile.modulePermissions, activeTab, 'read');
+  };
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-sky-500 selection:text-white">
       
@@ -679,27 +686,36 @@ export default function App() {
           </div>
         )}
 
-        {/* View Router */}
-        {activeTab === 'synoptic' && (
-          <SynopticOverview
-            articles={articles}
-            machines={machines}
-            activeOf={activeOf}
-            oee={oee}
-            onUpdateOee={(updated) => setOee(prev => ({ ...prev, ...updated }))}
-            onOpenDeclareModal={() => handleOpenDeclareModal()}
-            onUpdateMachine={handleUpdateMachine}
-            onGoToErp={() => setActiveTab('erp')}
-            onGoToMes={() => setActiveTab('mes')}
-            onGoToCSharp={() => setActiveTab('csharp')}
-            onGoToAnalytics={() => setActiveTab('analytics')}
-            onGoToMaintenance={() => setActiveTab('maintenance')}
-            onGoToPlanning={() => setActiveTab('planning')}
-            onGoToQuality={() => setActiveTab('quality')}
-            onGoToTraceability={() => setActiveTab('traceability')}
-            onGoToConnectivity={() => setActiveTab('connectivity')}
+        {/* RBAC Permission Guard */}
+        {!isCurrentTabAllowed() ? (
+          <AccessDeniedView
+            moduleId={activeTab}
+            onGoToAllowedTab={(tab) => setActiveTab(tab)}
+            onOpenAdminConsole={() => setIsUserManagementOpen(true)}
           />
-        )}
+        ) : (
+          <>
+            {/* View Router */}
+            {activeTab === 'synoptic' && (
+              <SynopticOverview
+                articles={articles}
+                machines={machines}
+                activeOf={activeOf}
+                oee={oee}
+                onUpdateOee={(updated) => setOee(prev => ({ ...prev, ...updated }))}
+                onOpenDeclareModal={() => handleOpenDeclareModal()}
+                onUpdateMachine={handleUpdateMachine}
+                onGoToErp={() => setActiveTab('erp')}
+                onGoToMes={() => setActiveTab('mes')}
+                onGoToCSharp={() => setActiveTab('csharp')}
+                onGoToAnalytics={() => setActiveTab('analytics')}
+                onGoToMaintenance={() => setActiveTab('maintenance')}
+                onGoToPlanning={() => setActiveTab('planning')}
+                onGoToQuality={() => setActiveTab('quality')}
+                onGoToTraceability={() => setActiveTab('traceability')}
+                onGoToConnectivity={() => setActiveTab('connectivity')}
+              />
+            )}
 
         {activeTab === 'erp' && (
           <ErpView
@@ -805,6 +821,8 @@ export default function App() {
 
         {activeTab === 'csharp' && (
           <CSharpArchitectureViewer />
+        )}
+        </>
         )}
 
       </main>

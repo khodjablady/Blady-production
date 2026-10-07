@@ -19,8 +19,10 @@ import {
 } from 'lucide-react';
 import { CSHARP_SOLUTION_FILES } from '../data/csharpSolutionTree';
 import { CSharpFileDefinition } from '../types';
+import { ThreeTierArchitectureView } from './ThreeTierArchitectureView';
 
 export const CSharpArchitectureViewer: React.FC = () => {
+  const [architectureViewMode, setArchitectureViewMode] = useState<'three_tier' | 'csharp_solution'>('three_tier');
   const [selectedFile, setSelectedFile] = useState<CSharpFileDefinition>(
     CSHARP_SOLUTION_FILES.find(f => f.filename === 'MrpStockService.cs') || CSHARP_SOLUTION_FILES[0]
   );
@@ -63,50 +65,85 @@ export const CSharpArchitectureViewer: React.FC = () => {
   return (
     <div className="space-y-6">
       
-      {/* Top Banner: Architecture Vision */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-sm">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div className="flex items-center space-x-3">
-            <div className="p-2 rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-              <FileCode2 className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center space-x-2">
-                <h2 className="text-xl font-bold text-white tracking-tight">
-                  Architecture Monolithe Modulaire C# (.NET 8/9)
-                </h2>
-                <span className="px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 text-xs font-semibold border border-indigo-500/30">
-                  Clean Architecture / DDD
-                </span>
-              </div>
-              <p className="text-xs text-slate-400">
-                Structure de dossiers et code source complet séparant strictement l'ERP, le MES et la Connectivité industrielle.
-              </p>
-            </div>
-          </div>
+      {/* View Mode Switcher */}
+      <div className="bg-slate-900/90 border border-slate-800 p-1.5 rounded-2xl flex items-center gap-2 text-xs">
+        <button
+          onClick={() => setArchitectureViewMode('three_tier')}
+          className={`flex-1 flex items-center justify-center space-x-2 py-3 px-4 rounded-xl font-bold transition-all ${
+            architectureViewMode === 'three_tier'
+              ? 'bg-gradient-to-r from-indigo-600 to-sky-600 text-white shadow-lg shadow-indigo-950/60'
+              : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+          }`}
+        >
+          <Layers className="w-4 h-4 text-sky-300" />
+          <span>Découpage Stratégique 3 Couches (Web ⇄ .NET 8/9 ⇄ C++ Edge)</span>
+          <span className="ml-1.5 px-2 py-0.5 rounded-full text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+            Recommandé
+          </span>
+        </button>
 
-          <div className="flex items-center space-x-2">
-            <a
-              href="/monusine-standalone.html"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center space-x-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm transition-all"
-              title="Ouvrir la démo HTML5 statique et autonome"
-            >
-              <ExternalLink className="w-4 h-4" />
-              <span>Démo HTML Autonome</span>
-            </a>
-
-            <button
-              onClick={handleDownloadFile}
-              className="flex items-center space-x-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow-sm transition-colors"
-            >
-              <Download className="w-4 h-4" />
-              <span>Télécharger {selectedFile.filename}</span>
-            </button>
-          </div>
-        </div>
+        <button
+          onClick={() => setArchitectureViewMode('csharp_solution')}
+          className={`flex-1 flex items-center justify-center space-x-2 py-3 px-4 rounded-xl font-bold transition-all ${
+            architectureViewMode === 'csharp_solution'
+              ? 'bg-gradient-to-r from-indigo-600 to-sky-600 text-white shadow-lg shadow-indigo-950/60'
+              : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+          }`}
+        >
+          <FileCode2 className="w-4 h-4 text-indigo-300" />
+          <span>Explorateur de Solution Monolithe C# (.NET 8/9 Code Source)</span>
+        </button>
       </div>
+
+      {/* RENDER ACTIVE MODE */}
+      {architectureViewMode === 'three_tier' ? (
+        <ThreeTierArchitectureView />
+      ) : (
+        <>
+          {/* Top Banner: Architecture Vision */}
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-sm">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                  <FileCode2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center space-x-2">
+                    <h2 className="text-xl font-bold text-white tracking-tight">
+                      Architecture Monolithe Modulaire C# (.NET 8/9)
+                    </h2>
+                    <span className="px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 text-xs font-semibold border border-indigo-500/30">
+                      Clean Architecture / DDD
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-400">
+                    Structure de dossiers et code source complet séparant strictement l'ERP, le MES et la Connectivité industrielle.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <a
+                  href="/monusine-standalone.html"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center space-x-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm transition-all"
+                  title="Ouvrir la démo HTML5 statique et autonome"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  <span>Démo HTML Autonome</span>
+                </a>
+
+                <button
+                  onClick={handleDownloadFile}
+                  className="flex items-center space-x-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow-sm transition-colors"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>Télécharger {selectedFile.filename}</span>
+                </button>
+              </div>
+            </div>
+          </div>
 
       {/* Visual Architectural Blocks Diagram */}
       <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm">
@@ -382,6 +419,8 @@ export const CSharpArchitectureViewer: React.FC = () => {
         </div>
 
       </div>
+      </>
+      )}
 
     </div>
   );

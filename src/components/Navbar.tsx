@@ -21,11 +21,14 @@ import {
   FileText,
   FlaskConical,
   GitFork,
-  ShieldCheck
+  ShieldCheck,
+  Lock
 } from 'lucide-react';
 import { BladyLogo } from './BladyLogo';
 import { useAuth } from '../context/AuthContext';
 import { AudioBackgroundPlayer } from './AudioBackgroundPlayer';
+import { hasModuleAccess } from '../data/rbacData';
+import { AppModuleId } from '../types';
 
 interface NavbarProps {
   activeTab: 'synoptic' | 'erp' | 'mes' | 'planning' | 'quality' | 'traceability' | 'analytics' | 'connectivity' | 'csharp' | 'maintenance';
@@ -51,6 +54,12 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenUserManagement
 }) => {
   const { user, profile, dbConnected, loginWithGoogle, logout } = useAuth();
+
+  const canAccess = (moduleId: AppModuleId): boolean => {
+    if (!profile || profile.role === 'admin') return true;
+    return hasModuleAccess(profile.modulePermissions, moduleId, 'read');
+  };
+
   return (
     <header className="bg-slate-900 text-slate-100 border-b border-slate-800 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -101,11 +110,13 @@ export const Navbar: React.FC<NavbarProps> = ({
                 activeTab === 'erp'
                   ? 'bg-sky-600 text-white shadow-sm'
                   : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
-              }`}
+              } ${!canAccess('erp') ? 'opacity-60' : ''}`}
+              title={!canAccess('erp') ? 'Accès restreint par politique RBAC' : undefined}
             >
               <Boxes className="w-4 h-4" />
               <span>Module ERP</span>
-              {criticalAlertCount > 0 && (
+              {!canAccess('erp') && <Lock className="w-3 h-3 text-slate-500" />}
+              {criticalAlertCount > 0 && canAccess('erp') && (
                 <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-amber-500/30 text-amber-300 font-bold border border-amber-500/50">
                   {criticalAlertCount}
                 </span>
@@ -119,10 +130,12 @@ export const Navbar: React.FC<NavbarProps> = ({
                 activeTab === 'mes'
                   ? 'bg-sky-600 text-white shadow-sm'
                   : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
-              }`}
+              } ${!canAccess('mes') ? 'opacity-60' : ''}`}
+              title={!canAccess('mes') ? 'Accès restreint par politique RBAC' : undefined}
             >
               <Layers className="w-4 h-4" />
               <span>Module MES & TRS</span>
+              {!canAccess('mes') && <Lock className="w-3 h-3 text-slate-500" />}
             </button>
 
             <button
@@ -132,10 +145,12 @@ export const Navbar: React.FC<NavbarProps> = ({
                 activeTab === 'planning'
                   ? 'bg-indigo-600 text-white shadow-sm'
                   : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
-              }`}
+              } ${!canAccess('planning') ? 'opacity-60' : ''}`}
+              title={!canAccess('planning') ? 'Accès restreint par politique RBAC' : undefined}
             >
               <CalendarRange className="w-4 h-4 text-indigo-400" />
               <span>Planning Gantt</span>
+              {!canAccess('planning') && <Lock className="w-3 h-3 text-slate-500" />}
             </button>
 
             <button
@@ -145,11 +160,13 @@ export const Navbar: React.FC<NavbarProps> = ({
                 activeTab === 'quality'
                   ? 'bg-emerald-600 text-white shadow-sm'
                   : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
-              }`}
+              } ${!canAccess('quality') ? 'opacity-60' : ''}`}
+              title={!canAccess('quality') ? 'Accès restreint par politique RBAC' : undefined}
             >
               <FlaskConical className="w-4 h-4 text-emerald-400" />
               <span>Contrôle Qualité</span>
-              {qualityAlertCount > 0 && (
+              {!canAccess('quality') && <Lock className="w-3 h-3 text-slate-500" />}
+              {qualityAlertCount > 0 && canAccess('quality') && (
                 <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-rose-500/30 text-rose-300 font-bold border border-rose-500/50 animate-pulse">
                   {qualityAlertCount}
                 </span>
@@ -163,10 +180,12 @@ export const Navbar: React.FC<NavbarProps> = ({
                 activeTab === 'traceability'
                   ? 'bg-indigo-600 text-white shadow-sm'
                   : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
-              }`}
+              } ${!canAccess('traceability') ? 'opacity-60' : ''}`}
+              title={!canAccess('traceability') ? 'Accès restreint par politique RBAC' : undefined}
             >
               <GitFork className="w-4 h-4 text-indigo-400" />
               <span>Traçabilité Lots</span>
+              {!canAccess('traceability') && <Lock className="w-3 h-3 text-slate-500" />}
             </button>
 
             <button
@@ -176,10 +195,12 @@ export const Navbar: React.FC<NavbarProps> = ({
                 activeTab === 'analytics'
                   ? 'bg-sky-600 text-white shadow-sm'
                   : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
-              }`}
+              } ${!canAccess('analytics') ? 'opacity-60' : ''}`}
+              title={!canAccess('analytics') ? 'Accès restreint par politique RBAC' : undefined}
             >
               <BarChart3 className="w-4 h-4 text-emerald-400" />
               <span>Analytique & OEE</span>
+              {!canAccess('analytics') && <Lock className="w-3 h-3 text-slate-500" />}
             </button>
 
             <button
@@ -189,10 +210,12 @@ export const Navbar: React.FC<NavbarProps> = ({
                 activeTab === 'maintenance'
                   ? 'bg-sky-600 text-white shadow-sm'
                   : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
-              }`}
+              } ${!canAccess('maintenance') ? 'opacity-60' : ''}`}
+              title={!canAccess('maintenance') ? 'Accès restreint par politique RBAC' : undefined}
             >
               <Wrench className="w-4 h-4 text-amber-400" />
               <span>Journal Maintenance</span>
+              {!canAccess('maintenance') && <Lock className="w-3 h-3 text-slate-500" />}
             </button>
 
             <button
@@ -202,11 +225,13 @@ export const Navbar: React.FC<NavbarProps> = ({
                 activeTab === 'connectivity'
                   ? 'bg-sky-600 text-white shadow-sm font-semibold'
                   : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
-              }`}
+              } ${!canAccess('connectivity') ? 'opacity-60' : ''}`}
+              title={!canAccess('connectivity') ? 'Accès restreint par politique RBAC' : undefined}
             >
               <Cpu className="w-4 h-4 text-sky-400" />
               <span>Connectivité Industrielle</span>
-              {telemetryAlertCount > 0 && (
+              {!canAccess('connectivity') && <Lock className="w-3 h-3 text-slate-500" />}
+              {telemetryAlertCount > 0 && canAccess('connectivity') && (
                 <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-rose-500/30 text-rose-300 font-bold border border-rose-500/50 animate-pulse">
                   {telemetryAlertCount}
                 </span>
@@ -220,10 +245,12 @@ export const Navbar: React.FC<NavbarProps> = ({
                 activeTab === 'csharp'
                   ? 'bg-indigo-600 text-white shadow-sm'
                   : 'text-slate-300 hover:text-white hover:bg-indigo-950/40'
-              }`}
+              } ${!canAccess('csharp') ? 'opacity-60' : ''}`}
+              title={!canAccess('csharp') ? 'Accès restreint par politique RBAC' : undefined}
             >
               <FileCode2 className="w-4 h-4 text-indigo-400" />
               <span className="font-semibold text-indigo-200">Architecture C# (.NET)</span>
+              {!canAccess('csharp') && <Lock className="w-3 h-3 text-slate-500" />}
             </button>
           </nav>
 
