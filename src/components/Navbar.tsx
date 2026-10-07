@@ -387,67 +387,169 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
       </div>
 
-      {/* Mobile navigation row */}
-      <div className="lg:hidden flex items-center overflow-x-auto px-4 py-2 border-t border-slate-800 bg-slate-950 space-x-2 text-xs">
+      {/* Industrial status and responsive navigation row */}
+      <div className="lg:hidden flex items-center overflow-x-auto px-4 py-2 border-t border-slate-800 bg-slate-950/95 backdrop-blur-md space-x-2 text-xs scrollbar-none shadow-inner">
+        {/* Live Industrial Line Status Badge */}
+        <div className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-[11px] font-mono text-slate-300 shrink-0 shadow-sm">
+          <span className={`w-2 h-2 rounded-full ${isSimulating ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500'}`} />
+          <span className="font-bold text-slate-200">Ligne 01</span>
+          <span className="text-slate-600">•</span>
+          <span className={isSimulating ? "text-emerald-400 font-semibold" : "text-slate-400"}>
+            {isSimulating ? "En Production" : "En Pause"}
+          </span>
+        </div>
+
         <button
           onClick={() => setActiveTab('synoptic')}
-          className={`px-3 py-1 rounded whitespace-nowrap ${activeTab === 'synoptic' ? 'bg-sky-600 text-white' : 'text-slate-400'}`}
+          className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all shrink-0 ${
+            activeTab === 'synoptic'
+              ? 'bg-sky-600 text-white shadow-md shadow-sky-950/50'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+          }`}
         >
-          Synoptique
+          <Activity className="w-3.5 h-3.5" />
+          <span>Synoptique</span>
         </button>
+
         <button
           onClick={() => setActiveTab('erp')}
-          className={`px-3 py-1 rounded whitespace-nowrap ${activeTab === 'erp' ? 'bg-sky-600 text-white' : 'text-slate-400'}`}
+          className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all shrink-0 ${
+            activeTab === 'erp'
+              ? 'bg-sky-600 text-white shadow-md shadow-sky-950/50'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+          } ${!canAccess('erp') ? 'opacity-60' : ''}`}
+          title={!canAccess('erp') ? 'Accès restreint par politique RBAC' : undefined}
         >
-          ERP ({criticalAlertCount} alertes)
+          <Boxes className="w-3.5 h-3.5" />
+          <span>ERP</span>
+          {!canAccess('erp') && <Lock className="w-3 h-3 text-slate-500 ml-0.5" />}
+          {criticalAlertCount > 0 && canAccess('erp') && (
+            <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-amber-500/30 text-amber-300 font-bold border border-amber-500/50">
+              {criticalAlertCount}
+            </span>
+          )}
         </button>
+
         <button
           onClick={() => setActiveTab('mes')}
-          className={`px-3 py-1 rounded whitespace-nowrap ${activeTab === 'mes' ? 'bg-sky-600 text-white' : 'text-slate-400'}`}
+          className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all shrink-0 ${
+            activeTab === 'mes'
+              ? 'bg-sky-600 text-white shadow-md shadow-sky-950/50'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+          } ${!canAccess('mes') ? 'opacity-60' : ''}`}
+          title={!canAccess('mes') ? 'Accès restreint par politique RBAC' : undefined}
         >
-          MES & TRS
+          <Layers className="w-3.5 h-3.5" />
+          <span>MES & TRS</span>
+          {!canAccess('mes') && <Lock className="w-3 h-3 text-slate-500 ml-0.5" />}
         </button>
+
         <button
           onClick={() => setActiveTab('planning')}
-          className={`px-3 py-1 rounded whitespace-nowrap ${activeTab === 'planning' ? 'bg-indigo-600 text-white' : 'text-indigo-300'}`}
+          className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all shrink-0 ${
+            activeTab === 'planning'
+              ? 'bg-indigo-600 text-white shadow-md shadow-indigo-950/50'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+          } ${!canAccess('planning') ? 'opacity-60' : ''}`}
+          title={!canAccess('planning') ? 'Accès restreint par politique RBAC' : undefined}
         >
-          Planning
+          <CalendarRange className="w-3.5 h-3.5 text-indigo-400" />
+          <span>Planning</span>
+          {!canAccess('planning') && <Lock className="w-3 h-3 text-slate-500 ml-0.5" />}
         </button>
+
         <button
           onClick={() => setActiveTab('quality')}
-          className={`px-3 py-1 rounded whitespace-nowrap ${activeTab === 'quality' ? 'bg-emerald-600 text-white' : 'text-emerald-400'}`}
+          className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all shrink-0 ${
+            activeTab === 'quality'
+              ? 'bg-emerald-600 text-white shadow-md shadow-emerald-950/50'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+          } ${!canAccess('quality') ? 'opacity-60' : ''}`}
+          title={!canAccess('quality') ? 'Accès restreint par politique RBAC' : undefined}
         >
-          Qualité {qualityAlertCount > 0 ? `(${qualityAlertCount} alertes)` : ''}
+          <FlaskConical className="w-3.5 h-3.5 text-emerald-400" />
+          <span>Qualité</span>
+          {!canAccess('quality') && <Lock className="w-3 h-3 text-slate-500 ml-0.5" />}
+          {qualityAlertCount > 0 && canAccess('quality') && (
+            <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-rose-500/30 text-rose-300 font-bold border border-rose-500/50 animate-pulse">
+              {qualityAlertCount}
+            </span>
+          )}
         </button>
+
         <button
           onClick={() => setActiveTab('traceability')}
-          className={`px-3 py-1 rounded whitespace-nowrap ${activeTab === 'traceability' ? 'bg-indigo-600 text-white' : 'text-indigo-300'}`}
+          className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all shrink-0 ${
+            activeTab === 'traceability'
+              ? 'bg-indigo-600 text-white shadow-md shadow-indigo-950/50'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+          } ${!canAccess('traceability') ? 'opacity-60' : ''}`}
+          title={!canAccess('traceability') ? 'Accès restreint par politique RBAC' : undefined}
         >
-          Traçabilité
+          <GitFork className="w-3.5 h-3.5 text-indigo-400" />
+          <span>Traçabilité</span>
+          {!canAccess('traceability') && <Lock className="w-3 h-3 text-slate-500 ml-0.5" />}
         </button>
+
         <button
           onClick={() => setActiveTab('analytics')}
-          className={`px-3 py-1 rounded whitespace-nowrap ${activeTab === 'analytics' ? 'bg-sky-600 text-white' : 'text-emerald-400'}`}
+          className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all shrink-0 ${
+            activeTab === 'analytics'
+              ? 'bg-sky-600 text-white shadow-md shadow-sky-950/50'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+          } ${!canAccess('analytics') ? 'opacity-60' : ''}`}
+          title={!canAccess('analytics') ? 'Accès restreint par politique RBAC' : undefined}
         >
-          Analytique & OEE
+          <BarChart3 className="w-3.5 h-3.5 text-emerald-400" />
+          <span>OEE & TRS</span>
+          {!canAccess('analytics') && <Lock className="w-3 h-3 text-slate-500 ml-0.5" />}
         </button>
+
         <button
           onClick={() => setActiveTab('maintenance')}
-          className={`px-3 py-1 rounded whitespace-nowrap ${activeTab === 'maintenance' ? 'bg-sky-600 text-white' : 'text-amber-400'}`}
+          className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all shrink-0 ${
+            activeTab === 'maintenance'
+              ? 'bg-sky-600 text-white shadow-md shadow-sky-950/50'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+          } ${!canAccess('maintenance') ? 'opacity-60' : ''}`}
+          title={!canAccess('maintenance') ? 'Accès restreint par politique RBAC' : undefined}
         >
-          Maintenance
+          <Wrench className="w-3.5 h-3.5 text-amber-400" />
+          <span>Maintenance</span>
+          {!canAccess('maintenance') && <Lock className="w-3 h-3 text-slate-500 ml-0.5" />}
         </button>
+
         <button
           onClick={() => setActiveTab('connectivity')}
-          className={`px-3 py-1 rounded whitespace-nowrap ${activeTab === 'connectivity' ? 'bg-sky-600 text-white font-semibold' : 'text-slate-400'}`}
+          className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all shrink-0 ${
+            activeTab === 'connectivity'
+              ? 'bg-sky-600 text-white shadow-md shadow-sky-950/50'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+          } ${!canAccess('connectivity') ? 'opacity-60' : ''}`}
+          title={!canAccess('connectivity') ? 'Accès restreint par politique RBAC' : undefined}
         >
-          Connectivité {telemetryAlertCount > 0 ? `(${telemetryAlertCount} alertes)` : ''}
+          <Cpu className="w-3.5 h-3.5 text-sky-400" />
+          <span>Connectivité</span>
+          {!canAccess('connectivity') && <Lock className="w-3 h-3 text-slate-500 ml-0.5" />}
+          {telemetryAlertCount > 0 && canAccess('connectivity') && (
+            <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-rose-500/30 text-rose-300 font-bold border border-rose-500/50 animate-pulse">
+              {telemetryAlertCount}
+            </span>
+          )}
         </button>
+
         <button
           onClick={() => setActiveTab('csharp')}
-          className={`px-3 py-1 rounded whitespace-nowrap ${activeTab === 'csharp' ? 'bg-indigo-600 text-white' : 'text-indigo-400'}`}
+          className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all shrink-0 ${
+            activeTab === 'csharp'
+              ? 'bg-indigo-600 text-white shadow-md shadow-indigo-950/50'
+              : 'text-slate-300 hover:text-white hover:bg-indigo-950/40'
+          } ${!canAccess('csharp') ? 'opacity-60' : ''}`}
+          title={!canAccess('csharp') ? 'Accès restreint par politique RBAC' : undefined}
         >
-          Architecture C#
+          <FileCode2 className="w-3.5 h-3.5 text-indigo-400" />
+          <span>Architecture C#</span>
+          {!canAccess('csharp') && <Lock className="w-3 h-3 text-slate-500 ml-0.5" />}
         </button>
       </div>
     </header>

@@ -266,25 +266,28 @@ export const AuthScreen: React.FC = () => {
             <button
               type="button"
               onClick={() => handleQuickDemo('admin', 'Zahir KHODJA (Directeur Général & Administrateur Système)', 'infos@blady-product.com')}
-              className="w-full flex items-center justify-between p-2.5 rounded-xl bg-gradient-to-r from-rose-950/80 to-slate-950/90 hover:from-rose-900/90 hover:to-slate-900 border border-rose-500/50 hover:border-rose-400 text-left transition-all shadow-md group"
+              className="w-full flex items-center justify-between p-3 rounded-2xl bg-gradient-to-r from-rose-950/90 via-slate-900 to-rose-950/80 hover:from-rose-900 hover:to-slate-800 border border-rose-500/50 hover:border-rose-400 text-left transition-all shadow-lg shadow-rose-950/40 group"
             >
-              <div className="flex items-center space-x-2.5">
-                <div className="p-1.5 rounded-lg bg-rose-500/20 text-rose-400 border border-rose-500/30 group-hover:scale-105 transition-transform">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 rounded-xl bg-rose-500/20 text-rose-400 border border-rose-500/30 group-hover:scale-105 transition-transform">
                   <KeyRound className="w-4 h-4" />
                 </div>
                 <div>
                   <div className="font-bold text-xs text-rose-200 flex items-center gap-1.5">
-                    <span>Administrateur Système (Pleins Pouvoirs)</span>
-                    <span className="text-[9px] bg-rose-900/80 text-rose-300 px-1.5 py-0.2 rounded border border-rose-700">
-                      Gestion RBAC & Droits
+                    <span>Administrateur Système Principal (Accès Rapide 1-Clic)</span>
+                    <span className="text-[9px] bg-rose-900/80 text-rose-300 px-1.5 py-0.2 rounded border border-rose-700 font-semibold">
+                      Pleins pouvoirs (11 modules)
                     </span>
                   </div>
-                  <div className="text-[10px] text-slate-400">
-                    Zahir KHODJA • infos@blady-product.com (Tous les modules)
+                  <div className="text-[11px] text-slate-300 font-medium">
+                    Nom : Zahir KHODJA (Directeur Général & Administrateur Système)
+                  </div>
+                  <div className="text-[10px] text-slate-400 font-mono">
+                    E-mail : infos@blady-product.com • Rôle : admin
                   </div>
                 </div>
               </div>
-              <ArrowRight className="w-4 h-4 text-rose-400 group-hover:translate-x-0.5 transition-transform shrink-0" />
+              <ArrowRight className="w-4 h-4 text-rose-400 group-hover:translate-x-1 transition-transform shrink-0" />
             </button>
 
             {/* Other Factory Roles Grid */}
@@ -331,7 +334,7 @@ export const AuthScreen: React.FC = () => {
                 className="flex items-center justify-between p-2 rounded-xl bg-slate-950/80 hover:bg-slate-800 border border-slate-800 hover:border-amber-500/50 text-slate-300 hover:text-white transition-all text-left"
               >
                 <div>
-                  <div className="font-semibold text-[11px] text-amber-300">Maintenance Ind.</div>
+                  <div className="font-semibold text-[11px] text-amber-300">Technicien Maintenance</div>
                   <div className="text-[9px] text-slate-400">Interventions & MTBF</div>
                 </div>
                 <ArrowRight className="w-3.5 h-3.5 text-amber-400" />
@@ -453,20 +456,30 @@ export const AuthScreen: React.FC = () => {
               <form onSubmit={handleLoginSubmit} className="space-y-4">
                 
                 {/* Admin Quick Credentials Fill Helper */}
-                <div className="bg-rose-950/40 border border-rose-800/60 rounded-2xl p-3 flex items-center justify-between text-xs">
-                  <div className="flex items-center space-x-2">
-                    <KeyRound className="w-4 h-4 text-rose-400 shrink-0" />
+                <div className="bg-rose-950/40 border border-rose-800/60 rounded-2xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                  <div className="flex items-start space-x-2.5">
+                    <KeyRound className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
                     <div>
-                      <span className="font-semibold text-rose-200 block">Compte Administrateur Préconfiguré (Zahir KHODJA)</span>
-                      <span className="text-[10px] text-slate-400">infos@blady-product.com • Mot de passe : TayakOut24061964</span>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="font-bold text-rose-200">Administrateur Système Principal</span>
+                        <span className="text-[9px] bg-rose-900/80 text-rose-300 px-1.5 py-0.2 rounded border border-rose-700 font-mono font-semibold">
+                          admin (Pleins pouvoirs sur les 11 modules)
+                        </span>
+                      </div>
+                      <div className="text-[11px] text-slate-300 mt-0.5">
+                        Nom : <strong className="text-white">Zahir KHODJA</strong> (Directeur Général & Administrateur Système)
+                      </div>
+                      <div className="text-[10px] text-slate-400 font-mono mt-0.5">
+                        E-mail : <span className="text-rose-300 font-semibold">infos@blady-product.com</span> • Mot de passe : <span className="text-rose-300 font-semibold">TayakOut24061964</span>
+                      </div>
                     </div>
                   </div>
                   <button
                     type="button"
                     onClick={handleFillAdminCredentials}
-                    className="px-2.5 py-1 rounded-lg bg-rose-900/60 hover:bg-rose-800 text-rose-200 border border-rose-700 text-[11px] font-semibold transition-colors shrink-0"
+                    className="px-3 py-1.5 rounded-xl bg-rose-900/80 hover:bg-rose-800 text-rose-100 border border-rose-600 text-[11px] font-bold transition-all shadow-sm shrink-0 self-end sm:self-auto"
                   >
-                    Préremplir
+                    Préremplissage Automatique (1-Clic)
                   </button>
                 </div>
 
