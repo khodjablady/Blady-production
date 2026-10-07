@@ -65,6 +65,7 @@ import { TelemetryAlertBanner } from './TelemetryAlertBanner';
 import { MachineToCloudLogViewer } from './MachineToCloudLogViewer';
 import { TelemetryD3TimeSeriesChart } from './TelemetryD3TimeSeriesChart';
 import { MachineAdvancedDetailsModal } from './MachineAdvancedDetailsModal';
+import { HardwareProtocolLatencyBoard } from './HardwareProtocolLatencyBoard';
 
 interface IndustrialConnectivityViewProps {
   machines: MachineLigne[];
@@ -84,7 +85,7 @@ export const IndustrialConnectivityView: React.FC<IndustrialConnectivityViewProp
   onGoToMaintenance
 }) => {
   // Navigation tabs inside connectivity
-  const [subTab, setSubTab] = useState<'plc-modbus' | 'opc-ua' | 'm2c' | 'curves' | 'machines' | 'thresholds' | 'csharp'>('plc-modbus');
+  const [subTab, setSubTab] = useState<'protocols-latency' | 'plc-modbus' | 'opc-ua' | 'm2c' | 'curves' | 'machines' | 'thresholds' | 'csharp'>('protocols-latency');
 
   // Advanced Details modal state
   const [advancedDetailsMachine, setAdvancedDetailsMachine] = useState<MachineLigne | null>(null);
@@ -1055,6 +1056,21 @@ export const IndustrialConnectivityView: React.FC<IndustrialConnectivityViewProp
         {/* Sub-Navigation Tabs */}
         <div className="flex items-center space-x-2 mt-4 pt-3 border-t border-slate-800/80 overflow-x-auto">
           <button
+            onClick={() => setSubTab('protocols-latency')}
+            className={`flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
+              subTab === 'protocols-latency'
+                ? 'bg-gradient-to-r from-sky-600 to-emerald-600 text-white shadow-md font-bold'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+            }`}
+          >
+            <Radio className="w-4 h-4 text-emerald-300 animate-pulse" />
+            <span>Matrice Protocoles (OPC UA / Modbus) & Latence</span>
+            <span className="px-1.5 py-0.2 rounded-full text-[9px] font-mono bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+              Live
+            </span>
+          </button>
+
+          <button
             onClick={() => setSubTab('plc-modbus')}
             className={`flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
               subTab === 'plc-modbus'
@@ -1160,6 +1176,73 @@ export const IndustrialConnectivityView: React.FC<IndustrialConnectivityViewProp
         onAcknowledgeAlerts={() => setIsAlertAcknowledged(true)}
         isAcknowledged={isAlertAcknowledged}
       />
+
+      {/* VIEW: PROTOCOLS STATUS & HARDWARE LATENCY BOARD */}
+      {subTab === 'protocols-latency' && (
+        <div className="space-y-6">
+          <HardwareProtocolLatencyBoard
+            machines={machines}
+            plcs={plcs}
+            isLiveSimulating={isLiveSimulating}
+            onPollMachine={(machineId) => {
+              const plc = plcs.find(p => p.machineId === machineId);
+              if (plc) handlePollPlc(plc.id);
+            }}
+            onToggleFault={handleTogglePlcOffline}
+          />
+
+          {/* Quick Shortcuts to Deep Protocol Analyzers */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+            <div 
+              onClick={() => setSubTab('opc-ua')}
+              className="p-4 bg-slate-900 border border-slate-800 hover:border-sky-500/50 rounded-2xl cursor-pointer transition-all space-y-2 group shadow-sm hover:bg-slate-900/90"
+            >
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-white flex items-center gap-2">
+                  <Server className="w-4 h-4 text-sky-400" />
+                  <span>Explorateur Nœuds OPC UA</span>
+                </span>
+                <ArrowRight className="w-4 h-4 text-slate-500 group-hover:text-sky-400 group-hover:translate-x-1 transition-all" />
+              </div>
+              <p className="text-[11px] text-slate-400">
+                Consulter les 12 variables industrielles surveillées (niveaux, températures, pressions) sous la norme IEC 62541.
+              </p>
+            </div>
+
+            <div 
+              onClick={() => setSubTab('plc-modbus')}
+              className="p-4 bg-slate-900 border border-slate-800 hover:border-emerald-500/50 rounded-2xl cursor-pointer transition-all space-y-2 group shadow-sm hover:bg-slate-900/90"
+            >
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-white flex items-center gap-2">
+                  <Terminal className="w-4 h-4 text-emerald-400" />
+                  <span>Trameur Réseau Modbus/TCP</span>
+                </span>
+                <ArrowRight className="w-4 h-4 text-slate-500 group-hover:text-emerald-400 group-hover:translate-x-1 transition-all" />
+              </div>
+              <p className="text-[11px] text-slate-400">
+                Inspecter les en-têtes MBAP, Function Codes 03/16 et paquets hexadécimaux échangés à 20Hz.
+              </p>
+            </div>
+
+            <div 
+              onClick={() => setSubTab('m2c')}
+              className="p-4 bg-slate-900 border border-slate-800 hover:border-cyan-500/50 rounded-2xl cursor-pointer transition-all space-y-2 group shadow-sm hover:bg-slate-900/90"
+            >
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-white flex items-center gap-2">
+                  <Cloud className="w-4 h-4 text-cyan-400" />
+                  <span>Flux Machine-to-Cloud (IIoT)</span>
+                </span>
+                <ArrowRight className="w-4 h-4 text-slate-500 group-hover:text-cyan-400 group-hover:translate-x-1 transition-all" />
+              </div>
+              <p className="text-[11px] text-slate-400">
+                Suivre l'encapsulation télémétrique MQTT Sparkplug B et l'ingestion Cloud en direct.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* VIEW 1: PLC FLEET DASHBOARD & REAL-TIME MODBUS/TCP TERMINAL */}
       {subTab === 'plc-modbus' && (
